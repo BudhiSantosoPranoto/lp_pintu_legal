@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" role="img" aria-label="PINTU LEGAL logo">
+  <!-- Icon: arched double door -->
+  <g>
+    <!-- Left door panel -->
+    <path d="M10 88 L10 46 Q10 20 36 20 L36 88 Z" fill="#0F2747"/>
+    <!-- Right door panel -->
+    <path d="M62 88 L62 46 Q62 20 88 20 L88 88 Z" fill="#0F2747"/>
+    <!-- Left gold knob -->
+    <circle cx="30" cy="60" r="3.6" fill="#C89B3C"/>
+    <!-- Right gold knob -->
+    <circle cx="66" cy="60" r="3.6" fill="#C89B3C"/>
+    <!-- Base plate -->
+    <rect x="6" y="88" width="86" height="6" rx="2" fill="#0F2747"/>
+  </g>
+  <!-- Wordmark -->
+  <g font-family="'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif" font-weight="800">
+    <text x="108" y="58" font-size="34" letter-spacing="1.5" fill="#0F2747">PINTU</text>
+    <text x="108" y="92" font-size="28" letter-spacing="2.5" fill="#C89B3C">LEGAL</text>
+  </g>
+</svg>

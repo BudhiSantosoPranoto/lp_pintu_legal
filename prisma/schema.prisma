@@ -1,0 +1,224 @@
+// Prisma schema for PINTU LEGAL — PT. Pintu Menuju Sukses
+// Phase 1: Premium legal business website + simple admin.
+//
+// NOTE: The sandbox dev environment uses SQLite. The data model is written
+// generically so it can be swapped to MySQL in production by changing only
+// the datasource provider + connection string.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Users / Admin
+// ────────────────────────────────────────────────────────────────────────────
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  role         String   @default("ADMIN") // ADMIN | EDITOR (Phase 1: ADMIN only)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Services
+// ────────────────────────────────────────────────────────────────────────────
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("service_categories")
+}
+
+model Service {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  shortDescription String
+  description      String
+  icon             String   // lucide icon name
+  highlights       String?  // JSON-encoded string[] of what's included
+  processSteps     String?  // JSON-encoded string[] of process steps
+  requirements     String?  // JSON-encoded string[] of required docs
+  durationLabel    String?  // e.g. "7–14 hari kerja" — null if unknown
+  priceLabel       String?  // null if not disclosed (use CTA instead)
+  faqsJson         String?  // JSON-encoded [{q,a}]
+  metaTitle        String?
+  metaDescription  String?
+  categoryId       String?
+  category         ServiceCategory? @relation(fields: [categoryId], references: [id])
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  leads            Lead[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("services")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Leads / Consultations
+// ────────────────────────────────────────────────────────────────────────────
+model Lead {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String
+  email        String?
+  serviceId    String?
+  service      Service? @relation(fields: [serviceId], references: [id])
+  businessName String?
+  message      String
+  status       String   @default("NEW") // NEW | CONTACTED | QUALIFIED | CONVERTED | LOST
+  source       String   @default("WEBSITE") // WEBSITE | WHATSAPP | ADMIN
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  statusHistories LeadStatusHistory[]
+
+  @@index([status])
+  @@index([serviceId])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Lead Status History — audit trail of every status transition.
+// `fromStatus` is nullable for the very first record (lead creation).
+// `changedBy` is the admin email, or "SYSTEM" for automated changes.
+// ────────────────────────────────────────────────────────────────────────────
+model LeadStatusHistory {
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStatus String?
+  toStatus   String
+  note       String?
+  changedBy  String?
+  createdAt  DateTime @default(now())
+
+  @@index([leadId])
+  @@map("lead_status_history")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Blog
+// ────────────────────────────────────────────────────────────────────────────
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  sortOrder   Int        @default(0)
+  posts       BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String        @unique
+  excerpt         String
+  content         String // markdown / long-form text
+  featuredImage   String?
+  categoryId      String?
+  category        BlogCategory? @relation(fields: [categoryId], references: [id])
+  authorName      String        @default("Tim Pintu Legal")
+  status          String        @default("DRAFT") // DRAFT | PUBLISHED
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  // Comma-separated lowercase tags (e.g. "pt,nib,pendirian,panduan").
+  // Parsed via `parseTags()` in src/data/queries.ts. Empty string = no tags.
+  tags            String    @default("")
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([slug])
+  @@map("blog_posts")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// FAQ, Testimonials, Site Settings
+// ────────────────────────────────────────────────────────────────────────────
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String   @default("Umum")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("faqs")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  company   String?
+  role      String?
+  quote     String
+  avatar    String?
+  rating    Int      @default(5)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("testimonials")
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@map("site_settings")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Admin Activity Log — audit trail of admin actions (login, content changes,
+// lead updates, etc.). Every entry is created via `logAdminActivity()` and is
+// strictly append-only. Logging is best-effort: failures are swallowed so the
+// parent operation (e.g. saving a lead) never fails because of an audit row.
+// ────────────────────────────────────────────────────────────────────────────
+model AdminActivity {
+  id          String   @id @default(cuid())
+  adminEmail  String
+  action      String // e.g. "LOGIN", "LEAD_STATUS_UPDATE", "BLOG_CREATE", "SERVICE_UPDATE"
+  entityType  String? // e.g. "lead", "blog_post", "service", "faq", "testimonial"
+  entityId    String?
+  detail      String? // JSON string with action-specific details
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([adminEmail])
+  @@index([createdAt])
+  @@map("admin_activities")
+}
