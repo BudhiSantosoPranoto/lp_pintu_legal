@@ -1,0 +1,81 @@
+---
+Task ID: 6-A
+Agent: full-stack-developer
+Task: Lead status workflow with timestamps + email/webhook notifications
+
+Work Log:
+- Read worklog.md (5 prior rounds), src/app/api/leads/route.ts, src/app/api/admin/leads/[id]/route.ts, src/components/admin/leads-table.tsx, src/lib/site.ts, prisma/schema.prisma, src/app/admin/(dashboard)/page.tsx, .env.example, src/components/admin/lead-status.ts, src/components/admin/settings-form.tsx, src/app/admin/(dashboard)/settings/page.tsx, src/app/admin/(dashboard)/leads/page.tsx, src/lib/auth/admin.ts, src/app/api/admin/settings/route.ts, src/components/admin/leads-source-chart.tsx, src/app/globals.css (brand tokens), package.json (no nodemailer — used webhook approach per task brief).
+- FEATURE 1 — Lead status workflow with timestamps:
+  - Schema: added `LeadStatusHistory` model (id, leadId, fromStatus?, toStatus, note?, changedBy?, createdAt) with `onDelete: Cascade` relation to Lead and `@@index([leadId])`. Added `statusHistories LeadStatusHistory[]` relation on Lead. Ran `bun run db:push` cleanly (new table created, no data loss).
+  - API: rewrote `src/app/api/admin/leads/[id]/route.ts`:
+    - Added `GET` endpoint returning the lead with `statusHistories` (ordered asc by createdAt) — used by the detail sheet to render the timeline without a full page reload.
+    - `PATCH` now fetches the existing lead BEFORE updating to capture the accurate `fromStatus`, then creates a `LeadStatusHistory` row only when the status actually transitions (skipped when only `note` changes). `changedBy` is set to the admin email from the session. Added optional `historyNote` field to the patch schema so the operator can attach a transition reason (separate from the lead's internal `note`).
+    - Returns `{ ok, lead, statusChanged }` so the client knows whether a history entry was added.
+    - DELETE note: status history rows cascade-delete automatically.
+  - UI: added `LeadStatusTimeline` section to the lead detail Sheet in `src/components/admin/leads-table.tsx`. Extracted the timeline into its own file (`src/components/admin/lead-status-timeline.tsx`, 111 lines) to keep leads-table.tsx focused on the table+sheet. Timeline features:
+    - Vertical timeline with a gold→navy gradient connector line.
+    - Per-entry card showing from → to badges (using the existing `leadStatusBadgeClass`/`LEAD_STATUS` palette), optional note, actor (admin email or "Sistem" with Bot icon, otherwise UserCog icon), and timestamp (id-ID formatted).
+    - Renders nothing when histories is empty (brand-new lead).
+  - Shared types: moved `LeadStatusHistoryEntry` type into `src/components/admin/lead-status.ts` (central status metadata file) so both `leads-table.tsx` and `lead-status-timeline.tsx` can import it without a circular dependency.
+  - Admin leads page (`src/app/admin/(dashboard)/leads/page.tsx`): now includes `statusHistories` in the Prisma query and serializes them into the `LeadRow` payload passed to the client component.
+  - Stale lead detection on dashboard (`src/app/admin/(dashboard)/page.tsx`): added `staleCutoff()` helper (now - 48h) and a parallel `db.lead.count({ where: { status: { in: ["NEW","CONTACTED"] }, updatedAt: { lt: staleCutoff() } } })` query. Renders a "Perlu Perhatian" warning card (gold gradient, AlertTriangle icon) between the stats grid and the charts row when `staleLeadsCount > 0`. Card shows the count + explanation + "Lihat Lead" button linking to `/admin/leads?stale=1`.
+  - Stale filter on leads page: added `?stale=1` deep-link support to `LeadsTable` — reads the URL param on mount, sets `staleOnly=true`, and strips the param from the address bar via `history.replaceState`. Added a "Perlu Perhatian" gold pill to the status filter row (only visible when `staleCount > 0`) that toggles the stale filter. When `staleOnly` is active, the per-status pills are dimmed and the filter label shows "filter: perlu perhatian". Reset button now also clears the stale filter.
+  - Exported `isStaleLead()` helper from leads-table.tsx (used by the LeadsTable component itself; threshold = 48h, statuses = NEW/CONTACTED).
+- FEATURE 2 — Email/webhook notifications (graceful degradation):
+  - Created `src/lib/notifications.ts` (225 lines, server-only):
+    - `resolveNotificationConfig()` — reads `LEAD_WEBHOOK_URL` + `ADMIN_NOTIFICATION_EMAIL` env vars first, falls back to `lead_webhook_url` + `admin_notification_email` site settings. Returns `{ webhookUrl, adminEmail, channel }` where channel = "webhook" if a URL is configured, else "console".
+    - `sendLeadNotification(lead)` — always resolves (never throws). If webhook URL is set, POSTs JSON payload (event, at, site, company, adminEmail, lead{...}) with a 6s AbortController timeout. Returns `{ ok, channel, message, at }`. On any error (timeout, non-2xx, network), logs to console and returns `{ ok: false, ... }`.
+    - `sendTestNotification()` — fires a synthetic lead through the same channel for the admin "Test Notifikasi" button.
+    - Console fallback logs a readable summary (Nama/Telepon/Email/Bisnis/Layanan/Pesan) so an operator watching the dev server log sees new leads arrive.
+  - Integrated into public lead creation (`src/app/api/leads/route.ts`): after `db.lead.create` succeeds (now also `include: { service: { select: { name: true } } }` so the payload includes the service name), calls `void sendLeadNotification({...}).catch(err => console.warn(...))`. The `void` + `.catch()` pattern guarantees the notification is fire-and-forget — the public API returns 200 immediately even if the webhook is slow or unreachable.
+  - Admin settings UI: created `src/components/admin/notifications-settings.tsx` (304 lines, "use client") — a dedicated card placed above the raw key/value grid on `/admin/settings`. Shows the active channel (Webhook vs Console/log) as a colored badge, two inputs for `lead_webhook_url` + `admin_notification_email` (with hints referencing the env var equivalents), a Save button (PATCHes the same `/api/admin/settings` endpoint), and a "Test Notifikasi" button that calls `/api/admin/notifications/test`. The test button auto-saves unsaved changes first, then displays the result inline as a green/red status card with the channel + timestamp.
+  - Test notification API: created `src/app/api/admin/notifications/test/route.ts` (GET, admin-gated) — calls `resolveNotificationConfig()` + `sendTestNotification()` and returns `{ ok, config, result }`.
+  - Updated `src/app/admin/(dashboard)/settings/page.tsx` to fetch `resolveNotificationConfig()` in parallel with the site settings and pass the values to the new `<NotificationsSettingsCard>`.
+  - Updated `.env.example` with `ADMIN_NOTIFICATION_EMAIL=` and `LEAD_WEBHOOK_URL=` (both optional, with comments explaining the graceful-degradation behavior).
+- Smoke-tested end-to-end:
+  - POST /api/leads with valid payload → 200, lead created, console notification logged (no webhook configured).
+  - POST /api/admin/login → 200 (created admin user `admin@pintulegal.id` / `pintulegal123` via `bun run scripts/create-admin.ts` for testing).
+  - PATCH /api/admin/leads/{id} with `{status:"CONTACTED", historyNote:"Dihubungi via WhatsApp"}` → 200, `statusChanged:true`.
+  - PATCH again with `{status:"QUALIFIED", historyNote:"Klien mengirim dokumen"}` → 200, `statusChanged:true`.
+  - GET /api/admin/leads/{id} → 200, returns lead with `statusHistories` array of 2 entries (NEW→CONTACTED, CONTACTED→QUALIFIED), each with correct `fromStatus`/`toStatus`/`note`/`changedBy`/`createdAt`.
+  - GET /api/admin/notifications/test → 200, returns `{ok:true, config:{channel:"console"}, result:{ok:true, channel:"console", message:"Notifikasi dicatat di log server..."}}`.
+  - Webhook channel: started a tiny Bun HTTP receiver on port 9876, set `lead_webhook_url=http://localhost:9876/hook` + `admin_notification_email=halo@pintulegal.id` via PATCH /api/admin/settings, then:
+    - GET /api/admin/notifications/test → 200, `result.channel:"webhook"`, `result.message:"Notifikasi terkirim ke webhook (200 OK)."`. Webhook receiver logged the POST with the synthetic lead payload.
+    - POST /api/leads (public) → 200 immediately. Within ~1s, webhook receiver logged the real lead payload (event:"lead.created", site:"PINTU LEGAL", company:"PT. Pintu Menuju Sukses", adminEmail:"halo@pintulegal.id", lead:{id,name,phone,...}). Confirms fire-and-forget behavior.
+  - Backdated 4 NEW leads to 72h ago via direct DB update to verify the dashboard "Perlu Perhatian" card renders:
+    - GET /admin → 200, HTML contains "Perlu Perhatian", "menunggu tindak lanjut", "stale=1" link (1 occurrence each).
+    - GET /admin/leads → 200, HTML contains "Perlu Perhatian" pill (1 occurrence).
+    - GET /admin/leads?stale=1 → 200 (URL param supported).
+  - GET /admin/settings → 200, HTML contains "Notifikasi Lead", "Test Notifikasi", "URL Webhook", "Email Admin Penerima" (1 occurrence each).
+- Fixed a pre-existing lint error in `src/components/admin/leads-source-chart.tsx` (was failing `react-hooks/immutability` rule because `cumulativePct` was reassigned inside `.map()` during render). Refactored to use `React.useMemo` + a `for` loop with a local accumulator. This was blocking the "0 errors" lint requirement.
+- Restarted the dev server mid-round (after `db:push` + `db:generate`) to clear Turbopack's cached Prisma client — the next-server process had picked up the old client without the `LeadStatusHistory` model and was crashing on first request. Cleared `.next/` cache and restarted via `nohup bun run dev`. All routes returned 200 after restart.
+- Ran `bun run lint` → 0 errors, 0 warnings (exit code 0).
+
+Stage Summary:
+- Files produced (4 new):
+  - `src/lib/notifications.ts` (225 lines) — server-only notification module: `resolveNotificationConfig`, `sendLeadNotification`, `sendTestNotification`. Webhook-with-timeout or console fallback. Never throws.
+  - `src/components/admin/lead-status-timeline.tsx` (111 lines, "use client") — vertical timeline of status transitions with gold/navy brand styling. Extracted from leads-table.tsx to keep that file focused.
+  - `src/components/admin/notifications-settings.tsx` (304 lines, "use client") — admin settings card for `lead_webhook_url` + `admin_notification_email` with channel-status badge + Save + Test Notifikasi button + inline result display.
+  - `src/app/api/admin/notifications/test/route.ts` (34 lines) — GET endpoint (admin-gated) that fires a synthetic lead through the configured channel and returns the result.
+- Files modified (8):
+  - `prisma/schema.prisma` — added `LeadStatusHistory` model + `statusHistories` relation on `Lead`.
+  - `src/components/admin/lead-status.ts` — added `LeadStatusHistoryEntry` type (shared by leads-table + lead-status-timeline, avoids circular imports).
+  - `src/components/admin/leads-table.tsx` — added `statusHistories` to `LeadRow`; added `staleOnly` filter state + `?stale=1` URL param support + "Perlu Perhatian" gold pill in the status filter row; exported `isStaleLead()` helper; rendered `<LeadStatusTimeline>` inside the detail Sheet. Removed now-unused lucide imports.
+  - `src/app/admin/(dashboard)/leads/page.tsx` — Prisma query now `include`s `statusHistories`; serializes them into the `LeadRow` payload.
+  - `src/app/admin/(dashboard)/page.tsx` — added `staleCutoff()` helper, parallel `staleLeadsCount` query, and a "Perlu Perhatian" warning card (gold gradient, AlertTriangle icon, "Lihat Lead" button → `/admin/leads?stale=1`).
+  - `src/app/admin/(dashboard)/settings/page.tsx` — fetches `resolveNotificationConfig()` in parallel + renders `<NotificationsSettingsCard>` above the existing `<SettingsForm>`.
+  - `src/app/api/admin/leads/[id]/route.ts` — added GET endpoint (returns lead with statusHistories); PATCH now records a `LeadStatusHistory` row on status change (fromStatus = old, toStatus = new, changedBy = admin email, optional historyNote); returns `statusChanged` flag.
+  - `src/app/api/leads/route.ts` — `db.lead.create` now `include`s service name; fires `void sendLeadNotification({...}).catch(...)` (non-blocking) after successful creation.
+  - `.env.example` — added `ADMIN_NOTIFICATION_EMAIL=` + `LEAD_WEBHOOK_URL=` with explanatory comments.
+  - `src/components/admin/leads-source-chart.tsx` — fixed pre-existing `react-hooks/immutability` lint error by refactoring segment computation into `React.useMemo` with a `for` loop.
+- Decisions:
+  - Used a webhook-based notification channel (per task brief) instead of bundling nodemailer/SMTP — keeps the sandbox dependency-free and works in any environment that can receive HTTP POSTs. The `admin_notification_email` setting is included in the webhook payload as `adminEmail` so downstream consumers (Slack integration, n8n workflow, etc.) can route accordingly.
+  - `sendLeadNotification` is called with `void` + `.catch()` (not `await`) so the public lead API returns 200 immediately. This is critical for conversion — the user submitting the form should never wait for or be blocked by the notification pipeline.
+  - `LeadStatusHistory` rows are only created when the status actually changes (not on every PATCH). This avoids polluting the audit trail with no-op entries when an admin only updates the internal note.
+  - `changedBy` is the admin email from the session, with the literal string "SYSTEM" reserved for future automated transitions (e.g. auto-stale-escalation). The timeline UI renders "Sistem" with a Bot icon when `changedBy === "SYSTEM"`, otherwise shows the email with a UserCog icon.
+  - Stale lead detection is a simple count query on the dashboard (not a background job). The 48h threshold matches the task brief. The "Perlu Perhatian" pill on the leads page uses the same `isStaleLead()` helper so the count is consistent between dashboard and leads page.
+  - `?stale=1` URL param is stripped from the address bar after reading (via `history.replaceState`) so it doesn't linger and confuse the operator. The filter state itself persists until they click Reset or another status pill.
+  - Moved `LeadStatusHistoryEntry` type to `lead-status.ts` (instead of defining it in `leads-table.tsx`) to avoid a circular type-only import between `leads-table.tsx` and `lead-status-timeline.tsx`. Type-only imports are erased at compile time so there's no runtime circular dependency, but keeping the type in the central status file is cleaner architecturally.
+  - The `LeadStatusTimeline` component is extracted into its own file (`lead-status-timeline.tsx`, 111 lines) rather than inlined in `leads-table.tsx` (which is already ~700 lines). This keeps the timeline self-contained and reusable.
+  - Admin settings page renders the new `<NotificationsSettingsCard>` ABOVE the existing raw key/value `<SettingsForm>` grid. The two notification-related keys (`lead_webhook_url`, `admin_notification_email`) still appear in the raw grid below — this is intentional, so power users can still edit them via the raw grid if needed, while the dedicated card provides a guided UI with the Test button.
+- Verification: `bun run lint` → 0 errors 0 warnings (exit code 0). All 6 admin/public API routes verified via curl with expected status codes (200/200/200/200/200/200). End-to-end webhook delivery confirmed via a local Bun HTTP receiver. Status history records correctly created with `fromStatus`/`toStatus`/`note`/`changedBy`/`createdAt`. Stale-lead dashboard card + leads-page pill render correctly when backdated leads exist. Settings page Notifikasi card renders with channel badge + Test button.
