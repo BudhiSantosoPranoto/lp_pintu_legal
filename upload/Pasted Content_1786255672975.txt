@@ -1,0 +1,1684 @@
+Buat sebuah website profesional, premium, modern, responsive, dan production-ready untuk perusahaan jasa legalitas bisnis di Indonesia.
+
+============================================================
+1. IDENTITAS BRAND
+============================================================
+
+Nama brand:
+PINTU LEGAL
+
+Nama badan usaha:
+PT. Pintu Menuju Sukses
+
+Pintu Legal adalah perusahaan yang bergerak di bidang jasa legalitas dan pendirian badan usaha di Indonesia.
+
+Brand positioning:
+
+Pintu Legal bukan ingin terlihat seperti kantor hukum/notaris tradisional.
+
+Pintu Legal harus terlihat seperti:
+- modern legal service company
+- professional business service
+- technology-enabled legal service
+- premium startup
+- terpercaya
+- mudah diakses
+- human-friendly
+
+Kesan yang harus muncul ketika pertama kali membuka website:
+
+"Ini perusahaan legalitas yang modern dan profesional."
+
+Bukan:
+
+"Ini website kantor notaris biasa."
+
+============================================================
+2. LOGO / BRAND MARK
+============================================================
+
+Gunakan logo Pintu Legal yang diberikan oleh user sebagai referensi utama.
+
+Logo memiliki konsep:
+- bentuk pintu
+- dua daun pintu
+- warna navy/dark blue
+- handle pintu berwarna gold
+- tulisan PINTU berwarna navy
+- tulisan LEGAL berwarna gold
+
+Jangan mengubah konsep logo.
+
+Jika file logo tersedia, gunakan file logo tersebut.
+Jika belum tersedia, buat area/logo placeholder yang mudah diganti kemudian.
+
+Logo harus tersedia dalam:
+- desktop navbar
+- mobile navbar
+- footer
+- favicon/app icon jika memungkinkan
+
+Jangan membuat logo baru yang berbeda dari identitas yang diberikan.
+
+============================================================
+3. BRAND PHILOSOPHY
+============================================================
+
+Nama "Pintu Legal" harus menjadi bagian dari storytelling website.
+
+Konsep utama:
+
+"Pintu" adalah simbol:
+- pintu pertama untuk memulai bisnis
+- pintu menuju legalitas
+- pintu menuju bisnis yang lebih profesional
+- pintu menuju pertumbuhan bisnis
+
+Jangan terlalu sering menggunakan metafora pintu sampai terasa dipaksakan.
+
+Gunakan secara elegan pada:
+- hero
+- section transition
+- copywriting
+- CTA
+- storytelling brand
+
+============================================================
+4. TAGLINE / BRAND MESSAGE
+============================================================
+
+Gunakan salah satu konsep utama berikut, dengan prioritas:
+
+Primary headline:
+
+"Membuka Jalan Menuju Bisnis yang Legal."
+
+Alternatif:
+
+"Mulai Bisnis dengan Langkah yang Benar."
+
+atau:
+
+"Legalitas Bisnis, Lebih Mudah dan Terarah."
+
+Jangan menggunakan slogan generik seperti:
+
+"Legalitas Bisnis Tanpa Ribet"
+
+sebagai headline utama.
+
+Headline harus terasa premium dan profesional.
+
+============================================================
+5. TARGET CUSTOMER
+============================================================
+
+Target utama:
+
+1. Orang yang ingin mendirikan PT
+2. Pengusaha UMKM
+3. Startup founder
+4. Entrepreneur
+5. Pemilik bisnis yang ingin membuat badan usaha
+6. Orang yang membutuhkan perubahan legalitas perusahaan
+7. Pemilik bisnis yang membutuhkan pendaftaran merek/HKI
+8. Orang yang membutuhkan perizinan bisnis
+9. Orang yang membutuhkan Virtual Office
+10. Perusahaan yang membutuhkan bantuan legalitas lanjutan
+
+Website harus mudah dipahami oleh orang awam.
+
+Jangan menggunakan bahasa hukum yang terlalu rumit.
+
+Jika istilah hukum diperlukan, berikan penjelasan sederhana.
+
+============================================================
+6. OBJECTIVE WEBSITE
+============================================================
+
+Tujuan utama website Phase 1:
+
+1. Membangun trust
+2. Menjelaskan layanan
+3. Menghasilkan leads
+4. Mengarahkan pengunjung ke WhatsApp
+5. Mengarahkan pengunjung mengisi form konsultasi
+6. Membuat brand terlihat premium
+7. Mendukung SEO
+8. Menjadi foundation untuk pengembangan berikutnya
+
+IMPORTANT:
+
+Website Phase 1 BELUM membutuhkan:
+- customer login
+- dashboard customer
+- partner login
+- notary portal
+- CRM kompleks
+- workflow engine
+- AI legal assistant
+- payment gateway
+- document management portal
+
+JANGAN membuat fitur-fitur tersebut sekarang.
+
+Namun struktur kode harus cukup rapi dan modular sehingga fitur tersebut dapat ditambahkan pada fase berikutnya tanpa melakukan rewrite total.
+
+============================================================
+7. TECH STACK
+============================================================
+
+Gunakan:
+
+Frontend:
+- Next.js
+- TypeScript
+- App Router
+- Tailwind CSS
+- shadcn/ui jika diperlukan
+- Lucide Icons
+- Framer Motion untuk animasi
+
+Database:
+- MySQL
+
+ORM:
+- Prisma ORM atau ORM modern yang stabil untuk MySQL
+
+Backend:
+Gunakan architecture yang clean dan mudah dikembangkan.
+
+Jika Next.js fullstack digunakan:
+- API Routes / Route Handlers boleh digunakan.
+
+Jika backend dipisahkan:
+- gunakan REST API architecture.
+
+Jangan menggunakan Firebase sebagai database utama.
+
+Jangan menggunakan Supabase sebagai database utama.
+
+DATABASE WAJIB MYSQL.
+
+============================================================
+8. DEPLOYMENT
+============================================================
+
+Project harus mudah:
+
+1. di-download
+2. di-install
+3. dijalankan secara lokal
+4. di-upload ke GitHub
+5. di-deploy ke Vercel
+
+Berikan:
+- package.json
+- environment variable example
+- .env.example
+- README.md
+- database migration
+- seed data jika diperlukan
+
+Jangan memasukkan credential/database password asli.
+
+Gunakan:
+
+DATABASE_URL
+
+untuk koneksi database.
+
+============================================================
+9. VISUAL DIRECTION
+============================================================
+
+Visual style:
+
+Premium
+Modern
+Minimal
+Clean
+Professional
+Elegant
+Technology-oriented
+Trustworthy
+
+Inspirasi visual:
+
+- Stripe
+- Linear
+- Vercel
+- Framer
+- modern SaaS websites
+
+Tetapi JANGAN meniru desain mereka secara langsung.
+
+Website harus memiliki identitas Pintu Legal sendiri.
+
+============================================================
+10. COLOR SYSTEM
+============================================================
+
+Gunakan warna yang berasal dari logo.
+
+Primary:
+
+Deep Navy / Legal Navy
+#0F2747
+
+Gunakan navy untuk:
+- heading tertentu
+- navbar
+- CTA
+- footer
+- important elements
+
+Gold:
+
+#C89B3C
+
+Gunakan gold sebagai accent.
+
+Jangan menggunakan gold secara berlebihan.
+
+Gold harus terasa premium.
+
+Background utama:
+
+#FFFFFF
+
+Secondary background:
+
+#F7F8FA
+
+Text utama:
+
+#0F172A
+
+Text secondary:
+
+#64748B
+
+Border:
+
+#E2E8F0
+
+Jangan menggunakan terlalu banyak warna.
+
+Design harus terlihat mahal karena:
+- typography
+- whitespace
+- spacing
+- hierarchy
+- subtle shadows
+
+bukan karena banyak warna.
+
+============================================================
+11. TYPOGRAPHY
+============================================================
+
+Gunakan font modern seperti:
+
+Plus Jakarta Sans
+
+atau jika ada alasan teknis:
+Inter.
+
+Preferensi:
+
+Heading:
+Plus Jakarta Sans, bold/semi-bold
+
+Body:
+Plus Jakarta Sans / Inter
+
+Typography harus memiliki hierarchy yang jelas.
+
+Hero heading:
+besar, bold, tetapi tidak berlebihan.
+
+Desktop:
+sekitar 56–72px
+
+Tablet:
+sekitar 44–56px
+
+Mobile:
+sekitar 36–44px
+
+Sesuaikan secara responsive.
+
+============================================================
+12. GLOBAL DESIGN LANGUAGE
+============================================================
+
+Gunakan:
+- rounded corners
+- subtle shadows
+- clean cards
+- generous whitespace
+- consistent spacing
+- smooth hover states
+- subtle motion
+
+Border radius:
+sekitar 16–24px untuk card besar.
+
+Button:
+rounded, tetapi jangan sampai terlalu pill-shaped kecuali memang diperlukan.
+
+Jangan membuat UI seperti template dashboard.
+
+Website harus terasa seperti premium business website.
+
+============================================================
+13. NAVBAR
+============================================================
+
+Navbar desktop:
+
+Logo
+
+Menu:
+
+Home
+Layanan
+Harga
+Tentang Kami
+FAQ
+Blog
+
+CTA:
+
+"Konsultasi Gratis"
+
+Navbar harus:
+- sticky
+- memiliki backdrop blur ketika scroll
+- berubah sedikit ketika scroll
+- tetap ringan
+- tidak terlalu tinggi
+
+Gunakan CTA yang jelas.
+
+Mobile:
+- hamburger menu
+- menu drawer/sheet
+- CTA tetap mudah ditemukan
+
+Jangan membuat navbar terlalu ramai.
+
+============================================================
+14. HERO SECTION
+============================================================
+
+Hero harus menjadi bagian paling kuat dari website.
+
+Layout desktop:
+
+Kiri:
+headline
+subheadline
+CTA
+trust indicators
+
+Kanan:
+visual premium yang berkaitan dengan legalitas bisnis.
+
+JANGAN menggunakan foto stock orang memakai jas sebagai visual utama.
+
+Gunakan visual seperti:
+- abstract legal document
+- premium business/legal dashboard mockup
+- document cards
+- progress visualization
+- subtle 3D door-inspired shape
+- floating legal document cards
+
+Visual harus terasa modern dan clean.
+
+Contoh headline:
+
+"Membuka Jalan Menuju Bisnis yang Legal."
+
+Subheadline:
+
+"Mulai dan kembangkan bisnis dengan fondasi legalitas yang tepat. Pintu Legal membantu mengurus kebutuhan legalitas bisnis Anda secara profesional, jelas, dan terarah."
+
+CTA utama:
+
+"Mulai Konsultasi"
+
+CTA sekunder:
+
+"Lihat Layanan"
+
+Tambahkan trust statement tetapi JANGAN membuat angka palsu.
+
+Jangan menulis:
+"10.000+ pelanggan"
+"4.9 rating"
+"500+ perusahaan"
+
+kecuali data tersebut memang diberikan oleh user.
+
+Jika belum ada data nyata, gunakan copy generik seperti:
+
+"Pendampingan profesional untuk kebutuhan legalitas bisnis Anda."
+
+============================================================
+15. HERO ANIMATION
+============================================================
+
+Gunakan Framer Motion secara subtle.
+
+Contoh:
+- headline fade + slide up
+- CTA fade
+- visual cards floating sedikit
+- document card muncul bertahap
+- subtle parallax
+
+Jangan menggunakan animasi berlebihan.
+
+Tidak boleh terasa seperti website gaming.
+
+Animation harus:
+- cepat
+- smooth
+- premium
+
+Hormati prefers-reduced-motion.
+
+============================================================
+16. TRUST SECTION
+============================================================
+
+Setelah hero, buat trust section.
+
+Tujuannya membangun rasa aman.
+
+Contoh:
+
+"Legalitas yang lebih jelas. Proses yang lebih terarah."
+
+Tampilkan beberapa value:
+
+- Profesional
+- Transparan
+- Terarah
+- Responsif
+
+JANGAN membuat logo customer palsu.
+
+JANGAN membuat testimonial palsu.
+
+============================================================
+17. SERVICE SECTION
+============================================================
+
+Section title:
+
+"Temukan Pintu yang Tepat untuk Bisnis Anda."
+
+Buat service cards modern.
+
+Layanan awal:
+
+1. Pendirian PT
+2. Pendirian CV
+3. Pendirian Yayasan
+4. Perubahan Data Perusahaan
+5. Pendaftaran Merek / HKI
+6. NIB & OSS
+7. Virtual Office
+8. Layanan Legalitas Bisnis Lainnya
+
+Jangan membuat klaim hukum spesifik yang belum diverifikasi.
+
+Setiap card:
+
+Icon
+Nama layanan
+Deskripsi singkat
+CTA "Pelajari"
+
+Hover:
+- slight lift
+- border/accent change
+- icon animation
+
+Gunakan Bento Grid jika secara visual lebih menarik.
+
+============================================================
+18. SERVICE DETAIL UX
+============================================================
+
+Klik layanan dapat diarahkan ke:
+
+/layanan/[slug]
+
+Contoh:
+
+/layanan/pendirian-pt
+
+Setiap service page harus memiliki:
+
+- Hero
+- Penjelasan layanan
+- Siapa yang membutuhkan
+- Apa yang termasuk
+- Proses
+- Estimasi waktu jika data tersedia
+- Dokumen yang diperlukan jika data tersedia
+- FAQ
+- CTA konsultasi
+
+JANGAN mengarang harga atau durasi jika belum diberikan.
+
+Jika belum ada data:
+gunakan placeholder yang jelas dan mudah diganti.
+
+============================================================
+19. WHY PINTU LEGAL
+============================================================
+
+Section:
+
+"Kenapa Memilih Pintu Legal?"
+
+Gunakan 4–6 value propositions.
+
+Contoh:
+
+01
+Profesional
+
+Pendampingan dengan proses yang jelas.
+
+02
+Transparan
+
+Informasi layanan disampaikan secara terbuka.
+
+03
+Praktis
+
+Proses komunikasi dibuat sederhana.
+
+04
+Terarah
+
+Setiap kebutuhan dibantu dari awal hingga selesai.
+
+05
+Responsif
+
+Tim siap membantu menjawab kebutuhan pelanggan.
+
+06
+Berorientasi Bisnis
+
+Legalitas bukan sekadar dokumen, tetapi fondasi bisnis.
+
+Jangan membuat klaim "tercepat", "termurah", "nomor 1", atau "terbaik di Indonesia" tanpa data.
+
+============================================================
+20. HOW IT WORKS
+============================================================
+
+Buat section:
+
+"Bagaimana Prosesnya?"
+
+4 langkah:
+
+01
+Konsultasi
+
+Ceritakan kebutuhan bisnis Anda.
+
+02
+Tentukan Layanan
+
+Tim membantu menentukan layanan yang sesuai.
+
+03
+Proses Legalitas
+
+Dokumen dan proses dikerjakan sesuai kebutuhan.
+
+04
+Selesai
+
+Dokumen legalitas diserahkan kepada pelanggan.
+
+Gunakan visual timeline horizontal desktop.
+
+Mobile menjadi vertical timeline.
+
+============================================================
+21. PRICING
+============================================================
+
+Buat section harga hanya jika data harga tersedia.
+
+Jika harga belum tersedia:
+
+JANGAN membuat harga palsu.
+
+Buat CTA:
+
+"Butuh Penawaran?"
+
+"Setiap kebutuhan bisnis berbeda. Konsultasikan kebutuhan Anda untuk mendapatkan informasi layanan yang sesuai."
+
+CTA:
+
+"Diskusikan Kebutuhan Saya"
+
+Struktur pricing harus mudah diaktifkan nanti.
+
+============================================================
+22. TESTIMONIAL
+============================================================
+
+Buat komponen testimonial reusable.
+
+Tetapi jika belum ada testimonial asli:
+
+JANGAN membuat testimonial palsu.
+
+Gunakan placeholder CMS/data yang jelas.
+
+Contoh:
+
+testimonial data:
+
+name
+company
+role
+quote
+avatar
+
+Jangan memasukkan data fiktif ke production seed sebagai testimonial nyata.
+
+============================================================
+23. FAQ
+============================================================
+
+Buat FAQ accordion.
+
+Contoh pertanyaan:
+
+- Apa itu Pintu Legal?
+- Apakah Pintu Legal membantu pendirian PT?
+- Dokumen apa yang diperlukan?
+- Berapa lama prosesnya?
+- Apakah proses konsultasi berbayar?
+- Apakah bisa konsultasi sebelum memesan?
+- Apakah Pintu Legal membantu perubahan data perusahaan?
+
+Jawaban harus hati-hati.
+
+Jika informasi belum tersedia, gunakan copy yang dapat diedit.
+
+Jangan memberikan nasihat hukum definitif.
+
+============================================================
+24. CTA SECTION
+============================================================
+
+Buat CTA besar sebelum footer.
+
+Background:
+Deep Navy.
+
+Headline:
+
+"Sudah siap membuka pintu menuju bisnis yang lebih profesional?"
+
+Subheadline:
+
+"Konsultasikan kebutuhan legalitas bisnis Anda bersama Pintu Legal."
+
+CTA:
+"Konsultasi Gratis"
+
+CTA sekunder:
+"WhatsApp Kami"
+
+Gunakan gold sebagai accent secara elegan.
+
+============================================================
+25. FOOTER
+============================================================
+
+Footer harus clean.
+
+Kolom:
+
+Pintu Legal
+
+Layanan
+- Pendirian PT
+- CV
+- Yayasan
+- Perubahan Perusahaan
+- HKI
+- NIB & OSS
+- Virtual Office
+
+Perusahaan
+- Tentang Kami
+- FAQ
+- Blog
+- Kontak
+
+Legal
+- Privacy Policy
+- Terms & Conditions
+
+Contact:
+- WhatsApp
+- Email
+- Alamat jika tersedia
+
+Jangan mengarang alamat, nomor WhatsApp, email, atau data perusahaan.
+
+Gunakan placeholder yang mudah diganti.
+
+Tampilkan:
+
+© 2026 PT. Pintu Menuju Sukses. All rights reserved.
+
+============================================================
+26. WHATSAPP CTA
+============================================================
+
+WhatsApp adalah CTA penting.
+
+Buat floating WhatsApp button.
+
+Posisi:
+bottom-right.
+
+Desktop:
+floating.
+
+Mobile:
+jangan sampai menutupi CTA penting.
+
+Nomor WhatsApp harus configurable melalui environment/config.
+
+Jangan hard-code nomor fiktif.
+
+============================================================
+27. CONTACT / CONSULTATION FORM
+============================================================
+
+Buat form konsultasi.
+
+Fields:
+
+Nama
+Nomor WhatsApp
+Email
+Jenis Layanan
+Nama Usaha (optional)
+Pesan / Kebutuhan
+
+Button:
+
+"Kirim Konsultasi"
+
+Form harus memiliki:
+- validation
+- loading state
+- success state
+- error state
+
+Data form disimpan ke MySQL.
+
+============================================================
+28. DATABASE MYSQL
+============================================================
+
+Gunakan MySQL.
+
+Buat schema yang clean.
+
+Minimal table:
+
+users
+contacts/leads
+services
+service_categories
+blog_posts
+blog_categories
+faqs
+testimonials
+site_settings
+
+Untuk Phase 1 tidak perlu membuat:
+- customer portal
+- company management
+- partner management
+- workflow
+- permissions kompleks
+- legal document management
+
+Tetapi database harus dibuat modular agar tabel tersebut dapat ditambahkan pada fase berikutnya.
+
+============================================================
+29. LEADS
+============================================================
+
+Table leads minimal:
+
+id
+name
+phone
+email
+service_id
+business_name
+message
+status
+source
+created_at
+updated_at
+
+Status awal:
+
+NEW
+
+Kemudian dapat berkembang:
+
+CONTACTED
+QUALIFIED
+CONVERTED
+LOST
+
+Admin CRUD untuk lead boleh dibuat jika memang mudah.
+
+Jika membuat admin:
+gunakan authentication sederhana dan secure.
+
+============================================================
+30. SERVICES
+============================================================
+
+Table services:
+
+id
+slug
+name
+short_description
+description
+icon
+is_active
+sort_order
+created_at
+updated_at
+
+Service harus dapat dikelola tanpa mengubah source code jika admin CMS dibuat.
+
+============================================================
+31. BLOG
+============================================================
+
+Buat blog architecture.
+
+URL:
+
+/blog
+
+Detail:
+
+/blog/[slug]
+
+Blog digunakan untuk SEO.
+
+Table:
+
+blog_posts
+
+fields minimal:
+
+id
+title
+slug
+excerpt
+content
+featured_image
+category_id
+author_name
+status
+published_at
+created_at
+updated_at
+
+Status:
+
+DRAFT
+PUBLISHED
+
+SEO fields:
+
+meta_title
+meta_description
+canonical_url
+
+============================================================
+32. SEO
+============================================================
+
+SEO harus diperhatikan sejak awal.
+
+Gunakan Next.js Metadata API.
+
+Homepage metadata:
+
+Title:
+Pintu Legal — Legalitas Bisnis yang Lebih Mudah dan Terarah
+
+Description:
+Buat deskripsi SEO yang natural dan tidak keyword stuffing.
+
+Target keyword secara natural:
+
+jasa pendirian PT
+pendirian PT
+pendirian CV
+jasa legalitas bisnis
+pendaftaran merek
+HKI
+NIB
+OSS
+virtual office
+
+Jangan keyword stuffing.
+
+Buat:
+- sitemap.xml
+- robots.txt
+- Open Graph metadata
+- Twitter/X metadata
+- favicon
+- canonical URL
+- structured data jika relevan
+
+Structured data yang relevan:
+Organization
+LocalBusiness jika data lokasi nyata tersedia
+Service
+FAQPage
+Article
+
+Jangan membuat structured data dengan informasi palsu.
+
+============================================================
+33. PERFORMANCE
+============================================================
+
+Website harus cepat.
+
+Prioritas:
+
+- optimized images
+- lazy loading
+- next/image
+- minimal JavaScript
+- code splitting
+- avoid unnecessary libraries
+- semantic HTML
+- accessible components
+
+Target:
+
+Lighthouse:
+Performance tinggi
+Accessibility tinggi
+SEO tinggi
+Best Practices tinggi
+
+============================================================
+34. RESPONSIVE DESIGN
+============================================================
+
+WAJIB responsive.
+
+Breakpoints minimal:
+
+Mobile
+Tablet
+Desktop
+Large Desktop
+
+Test visual untuk:
+- 360px
+- 390px
+- 430px
+- 768px
+- 1024px
+- 1280px
+- 1440px
+- 1920px
+
+Mobile bukan sekadar desktop yang diperkecil.
+
+Design mobile harus dipikirkan secara khusus.
+
+============================================================
+35. ACCESSIBILITY
+============================================================
+
+Gunakan:
+- semantic HTML
+- aria-label jika diperlukan
+- keyboard navigation
+- visible focus state
+- sufficient contrast
+- alt text
+- accessible forms
+
+Respect:
+
+prefers-reduced-motion
+
+============================================================
+36. COMPONENT ARCHITECTURE
+============================================================
+
+Jangan membuat satu file besar berisi seluruh homepage.
+
+Gunakan reusable components.
+
+Contoh:
+
+components/
+  layout/
+  navbar/
+  footer/
+  hero/
+  services/
+  testimonials/
+  faq/
+  cta/
+  forms/
+  ui/
+
+Pisahkan:
+- content
+- components
+- data
+- API
+- database
+
+Gunakan clean architecture yang reasonable.
+
+Jangan over-engineer.
+
+============================================================
+37. PAGE STRUCTURE
+============================================================
+
+Minimal buat:
+
+/
+Home
+
+/layanan
+Daftar layanan
+
+/layanan/[slug]
+Detail layanan
+
+/tentang
+Tentang Pintu Legal
+
+/harga
+Pricing / consultation
+
+/faq
+FAQ
+
+/blog
+Blog listing
+
+/blog/[slug]
+Blog detail
+
+/kontak
+Contact
+
+/privacy-policy
+Privacy Policy
+
+/terms
+Terms & Conditions
+
+============================================================
+38. ADMIN
+============================================================
+
+Phase 1 boleh memiliki admin sederhana jika Z.ai mampu membuatnya dengan rapi.
+
+Admin digunakan untuk:
+- melihat leads
+- mengelola service
+- mengelola blog
+- mengelola FAQ
+- mengelola testimonial
+- site settings
+
+Admin route:
+
+/admin
+
+Jika admin dibuat:
+
+/admin/login
+
+Gunakan secure authentication.
+
+Jangan menyimpan password plaintext.
+
+Gunakan password hashing.
+
+Jangan membuat admin default dengan password lemah.
+
+Gunakan environment variable atau seed yang meminta password saat setup.
+
+============================================================
+39. SITE SETTINGS
+============================================================
+
+Buat konfigurasi yang mudah diubah:
+
+brand_name
+company_name
+whatsapp_number
+email
+address
+instagram
+facebook
+linkedin
+youtube
+primary_color
+secondary_color
+site_url
+
+Jangan hard-code informasi bisnis yang belum diberikan.
+
+============================================================
+40. FUTURE EXTENSIBILITY
+============================================================
+
+PENTING:
+
+Jangan implementasikan fitur berikut sekarang:
+
+Customer Login
+Customer Portal
+Company Management
+Partner Portal
+Notary Login
+Document Management
+Progress Tracking
+Workflow
+CRM
+Payment
+AI Assistant
+
+Namun code architecture harus memungkinkan fitur tersebut ditambahkan kemudian.
+
+Future concept:
+
+User
+Company
+Company Member
+Role
+Partner
+Order
+Workflow
+Document
+Progress
+
+Tetapi jangan membuat semua tabel tersebut sekarang jika belum digunakan.
+
+============================================================
+41. SECURITY
+============================================================
+
+Gunakan best practices:
+
+- environment variables
+- server-side validation
+- input sanitization
+- prepared queries / ORM
+- CSRF protection jika relevan
+- rate limiting untuk public form jika memungkinkan
+- validation
+- secure headers
+- no secrets in Git
+- no passwords in source code
+
+Contact form harus terlindungi dari spam.
+
+Tambahkan honeypot atau mechanism anti-spam sederhana.
+
+============================================================
+42. CONTENT RULE
+============================================================
+
+Bahasa utama:
+Bahasa Indonesia.
+
+Tone:
+- profesional
+- friendly
+- modern
+- jelas
+- tidak terlalu formal
+- tidak terlalu banyak jargon hukum
+
+Jangan menggunakan bahasa marketing yang berlebihan.
+
+Hindari:
+"terbaik"
+"termurah"
+"nomor satu"
+"100% pasti"
+"pasti selesai"
+"garansi"
+"tercepat"
+
+kecuali ada data/legal basis yang benar.
+
+============================================================
+43. IMPORTANT LEGAL CONTENT RULE
+============================================================
+
+Pintu Legal adalah perusahaan jasa legalitas.
+
+Website tidak boleh memberikan kesan bahwa semua proses hukum dijamin tanpa kondisi.
+
+Gunakan bahasa:
+"membantu"
+"mendampingi"
+"mengurus"
+"memfasilitasi"
+
+bukan:
+"pasti disetujui"
+"pasti selesai"
+"100% berhasil"
+
+Semua konten legal harus dapat diedit.
+
+============================================================
+44. UI DETAILS
+============================================================
+
+Gunakan micro-interactions:
+
+Button:
+hover
+active
+focus
+
+Cards:
+hover lift 2–4px
+
+Links:
+subtle transition
+
+Navbar:
+transparent → blurred white/navy depending section
+
+Scroll:
+subtle reveal animation
+
+Section:
+fade-in when entering viewport
+
+Tetapi jangan semua elemen dianimasikan.
+
+Gunakan animation sebagai enhancement, bukan gimmick.
+
+============================================================
+45. HERO VISUAL
+============================================================
+
+Saya ingin hero visual menjadi salah satu ciri khas Pintu Legal.
+
+Buat visual berupa modern legal/business workspace.
+
+Contoh:
+
+floating card:
+
+"Legalitas Bisnis"
+
+Status:
+"Proses Berjalan"
+
+Progress:
+72%
+
+Document cards:
+Akta
+SK
+NIB
+
+Gunakan abstract representation.
+
+JANGAN membuat dashboard customer yang seolah-olah sudah benar-benar tersedia.
+
+Visual tersebut hanya merupakan marketing illustration.
+
+Jika menggunakan mockup dashboard, berikan label kecil:
+
+"Preview"
+
+atau gunakan visual generik agar tidak misleading.
+
+============================================================
+46. DESIGN DETAILS
+============================================================
+
+Website harus memiliki:
+
+- large whitespace
+- strong typography
+- asymmetric layout secukupnya
+- elegant cards
+- subtle gold accents
+- navy sections
+- soft gray backgrounds
+- modern iconography
+
+Jangan:
+- gradient berlebihan
+- neon
+- glassmorphism berlebihan
+- rounded everything
+- terlalu banyak shadow
+- stock photo generik
+- ilustrasi kartun
+
+============================================================
+47. MOBILE UX
+============================================================
+
+Mobile navbar:
+
+Logo kiri
+Menu button kanan
+
+Floating WhatsApp.
+
+CTA button harus mudah ditekan.
+
+Service cards:
+single column / horizontal scroll sesuai konteks.
+
+FAQ:
+accordion full width.
+
+Form:
+single column.
+
+Jangan membuat horizontal overflow.
+
+============================================================
+48. DATA / PLACEHOLDER
+============================================================
+
+Jika informasi belum diberikan oleh user:
+
+JANGAN mengarang.
+
+Gunakan placeholder:
+
+[Nomor WhatsApp]
+[Email]
+[Alamat]
+[Instagram]
+
+Tetapi buat semuanya mudah dikonfigurasi.
+
+Demikian juga:
+- harga
+- estimasi proses
+- jumlah customer
+- testimonial
+- partner
+- client logo
+
+Jangan membuat angka palsu.
+
+============================================================
+49. README
+============================================================
+
+Buat README.md yang menjelaskan:
+
+1. Project overview
+2. Tech stack
+3. Requirements
+4. Installation
+5. Environment variables
+6. MySQL setup
+7. Prisma/database migration
+8. Seed data
+9. Development
+10. Production build
+11. Deployment to Vercel
+12. GitHub workflow
+
+Contoh:
+
+npm install
+
+npm run dev
+
+npm run build
+
+npm run start
+
+Database migration harus dijelaskan.
+
+============================================================
+50. ENVIRONMENT
+============================================================
+
+Buat:
+
+.env.example
+
+Minimal:
+
+DATABASE_URL=
+NEXT_PUBLIC_SITE_URL=
+NEXT_PUBLIC_WHATSAPP_NUMBER=
+NEXT_PUBLIC_SITE_NAME=
+
+Jika ada secret:
+gunakan server-only environment variable.
+
+Jangan expose database credentials ke browser.
+
+============================================================
+51. CODE QUALITY
+============================================================
+
+Code harus:
+
+- readable
+- modular
+- typed
+- maintainable
+- no unnecessary duplication
+- no giant component
+- no giant page
+- no inline hardcoded content jika seharusnya configurable
+
+Gunakan TypeScript strict mode jika memungkinkan.
+
+Jangan menggunakan `any` secara berlebihan.
+
+============================================================
+52. FINAL OUTPUT
+============================================================
+
+Saya ingin hasil akhirnya berupa FULL PROJECT, bukan sekadar contoh kode.
+
+Pastikan semua file yang diperlukan dibuat.
+
+Minimal:
+
+package.json
+next.config
+tsconfig
+tailwind config jika diperlukan
+app/
+components/
+lib/
+prisma/
+public/
+README.md
+.env.example
+
+Jika menggunakan shadcn:
+buat konfigurasi dan component yang diperlukan.
+
+============================================================
+53. DEVELOPMENT PRIORITY
+============================================================
+
+Prioritas pengerjaan:
+
+1. Design system
+2. Navbar
+3. Hero
+4. Services
+5. Why Pintu Legal
+6. How It Works
+7. CTA
+8. Footer
+9. Service pages
+10. About
+11. FAQ
+12. Blog
+13. Contact
+14. MySQL
+15. Lead form
+16. Admin sederhana jika memungkinkan
+17. SEO
+18. Performance
+19. Responsive
+20. Final polish
+
+Jangan mengorbankan kualitas UI hanya karena ingin cepat selesai.
+
+============================================================
+54. IMPORTANT SCOPE CONTROL
+============================================================
+
+Jangan memperluas scope tanpa alasan.
+
+Ini adalah:
+
+PHASE 1 — PREMIUM LEGAL BUSINESS WEBSITE
+
+Bukan:
+
+PHASE 2 — LEGAL PLATFORM
+PHASE 3 — LEGAL ERP
+PHASE 4 — LEGAL SaaS
+
+Jangan implementasikan fitur masa depan sekarang.
+
+Tetapi jangan membuat architecture yang menyulitkan pengembangan di masa depan.
+
+============================================================
+55. FINAL DESIGN GOAL
+============================================================
+
+Ketika dibandingkan dengan website perusahaan legalitas konvensional, Pintu Legal harus terlihat:
+
+lebih modern
+lebih premium
+lebih terpercaya
+lebih mudah digunakan
+lebih technology-oriented
+lebih clean
+lebih memorable
+
+Brand harus terasa:
+
+"Pintu Legal adalah perusahaan legalitas modern yang memahami dunia bisnis."
+
+============================================================
+56. FINAL INSTRUCTION
+============================================================
+
+Jangan hanya membuat template generik.
+
+Jangan menghasilkan website yang terlihat seperti template Tailwind biasa.
+
+Jangan menggunakan stock photo generik sebagai hero utama.
+
+Jangan menggunakan fake testimonials.
+
+Jangan menggunakan fake statistics.
+
+Jangan membuat fake client logos.
+
+Jangan membuat fake legal claims.
+
+Jangan mengarang informasi perusahaan.
+
+Fokus pada:
+UI/UX
+brand identity
+conversion
+trust
+SEO
+performance
+responsive design
+code quality
+MySQL architecture
+
+Buat website yang terasa benar-benar dibuat khusus untuk:
+
+PINTU LEGAL
+PT. Pintu Menuju Sukses
+
+Sebelum menyelesaikan project, lakukan final review terhadap:
+- desktop
+- tablet
+- mobile
+- typography
+- spacing
+- colors
+- accessibility
+- SEO
+- forms
+- database
+- security
+- deployment
+
+Pastikan project dapat dijalankan setelah:
+
+npm install
+npm run dev
+
+dan dapat dibuild dengan:
+
+npm run build
+
+Hasil akhir harus berupa source code project yang lengkap dan siap di-download, di-upload ke GitHub, dan dikembangkan lebih lanjut.
