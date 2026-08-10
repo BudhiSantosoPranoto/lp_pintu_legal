@@ -18,8 +18,10 @@ export const siteConfig = {
   // Contact
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "6285888818055", // E.164 without "+"
   whatsappDisplay: process.env.NEXT_PUBLIC_WHATSAPP_DISPLAY ?? "0858-8881-8055",
-  email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? "pintulegalindonesia@gmail.com",
-  address: process.env.NEXT_PUBLIC_SITE_ADDRESS ?? "Sapphire Residence Slawi Blok C No. 15\nKel. Slawi Wetan, Kec. Slawi, Kab. Tegal, Jawa Tengah 52411",
+  //email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? "pintulegalindonesia@gmail.com",
+  //address: process.env.NEXT_PUBLIC_SITE_ADDRESS ?? "Sapphire Residence Slawi Blok C No. 15\nKel. Slawi Wetan, Kec. Slawi, Kab. Tegal, Jawa Tengah 52411",
+  email: "pintulegalindonesia@gmail.com",
+  address: "Sapphire Residence Slawi Blok C No. 15\nKel. Slawi Wetan, Kec. Slawi, Kab. Tegal, Jawa Tengah 52411",
 
   socials: {
     instagram: process.env.NEXT_PUBLIC_INSTAGRAM ?? "",
