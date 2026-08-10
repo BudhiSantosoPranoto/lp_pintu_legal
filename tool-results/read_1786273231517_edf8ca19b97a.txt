@@ -1,0 +1,385 @@
+  1200→- Smoke-tested end-to-end:
+  1201→  - Login → 200, admin cookie set.
+  1202→  - GET /admin → 200 in 5.6s (first compile), renders "Funnel Konversi Lead", "Ringkasan Konversi", "Tingkat Konversi", "Tingkat Kehilangan", "Lead Aktif di Funnel", "Lead Hilang", "konversi" labels all present in HTML.
+  1203→  - GET /admin/leads → 200, renders checkbox column (`w-12 pl-4`), per-row checkboxes with `aria-label="Pilih lead {name}"` for all 7 leads, select-all checkbox with `aria-label="Pilih semua lead di halaman ini"`, "Perlu Perhatian" pill (existing feature intact).
+  1204→  - POST /api/admin/leads/bulk with action=update_status, status=CONTACTED, 2 lead IDs → 200 `{ok:true, affected:2, skipped:0}`. Verified via `db.leadStatusHistory.findMany` that 2 history rows were created with `fromStatus:"NEW"`, `toStatus:"CONTACTED"`, `note:"Diperbarui secara massal"`, `changedBy:"admin@pintulegal.id"`.
+  1205→  - POST /api/admin/leads/bulk with same status (idempotent) → `{ok:true, affected:0, skipped:2}` (no new history rows created, since no transition occurred).
+  1206→  - POST /api/admin/leads/bulk with invalid action → 422 Zod validation error.
+  1207→  - POST /api/admin/leads/bulk without auth cookie → 401 "Tidak terautentikasi".
+  1208→  - POST /api/admin/leads/bulk with malformed JSON → 400 "Body tidak valid".
+  1209→- Ran `bun run lint` → 0 errors, 0 warnings (exit code 0).
+  1210→
+  1211→Stage Summary:
+  1212→- Files produced (3 new):
+  1213→  - `src/app/api/admin/leads/bulk/route.ts` (119 lines) — POST endpoint for bulk update_status / delete. Uses `db.$transaction` to atomically update leads + insert LeadStatusHistory audit rows. Admin-gated via `getAdminSession()`. Zod-validated body. Skips no-op transitions.
+  1214→  - `src/components/admin/leads-bulk-bar.tsx` (300 lines, "use client") — floating fixed-bottom navy bulk-action bar with status Select, destructive Hapus button + confirmation Dialog, and Batal clear button. Toasts on success/failure. Loading states for both actions.
+  1215→  - `src/components/admin/leads-funnel-chart.tsx` (220 lines) — pure HTML/CSS trapezoid funnel chart with navy→gold gradient across 4 stages, conversion-rate labels between stages, LOST leads stat below, and a 240px empty state.
+  1216→- Files modified (2):
+  1217→  - `src/components/admin/leads-table.tsx` — added Checkbox import + LeadsBulkBar import; added `selectedIds: Set<string>` state + `toggleSelect`/`clearSelection`/`toggleSelectAllVisible`/`handleRefresh` callbacks + `allVisibleSelected`/`someVisibleSelected` derived booleans; added `w-12` checkbox column with select-all (indeterminate support) in the header; added per-row checkboxes with `stopPropagation` + descriptive aria-labels; bumped empty-state colSpan 6→7; applied `bg-gold-50 ring-1 ring-inset ring-gold-200` to selected rows; rendered `<LeadsBulkBar>` when `selectedIds.size > 0`.
+  1218→  - `src/app/admin/(dashboard)/page.tsx` — added `db.lead.groupBy({ by:["status"] })` as 11th Promise.all entry; built `statusCounts: LeadStatusCounts` map; imported `LeadsFunnelChart` + `LeadStatusCounts`; added a new "Conversion funnel" row (lg:grid-cols-3) below the source breakdown row with the funnel chart spanning 2 cols + a new navy-mesh "Ringkasan Konversi" summary card spanning 1 col (Tingkat Konversi / Tingkat Kehilangan / Lead Aktif di Funnel).
+  1219→- Decisions:
+  1220→  - Extracted the bulk-action bar into its own component file (`leads-bulk-bar.tsx`) rather than inlining in `leads-table.tsx` (which is already 775+ lines). Keeps the bulk UI + dialog self-contained, and lets the leads-table file stay focused on the table + filter bar + detail sheet.
+  1221→  - The bulk endpoint uses `db.$transaction` so the audit trail can never diverge from the lead state — if the history-insert fails, the update rolls back too. This matters for compliance/audit use cases.
+  1222→  - `createMany` is used for the history rows (single round-trip) instead of looping `create` calls — much more efficient for large selections.
+  1223→  - Only genuine transitions (where the existing status differs from the new status) generate history rows. Re-applying the same status is a no-op. This matches the pattern in the single-lead PATCH endpoint and keeps the audit trail clean.
+  1224→  - `selectedIds` is a `Set<string>` rather than an array — O(1) membership checks for highlighting + the `every`/`some` derivations, and the natural "toggle individual ID" semantic.
+  1225→  - "Select all" operates on the *currently-filtered* rows (not the whole `leads` array). This is the expected UX: if you filter to "CONTACTED" and hit select-all, you only want the visible CONTACTED leads selected, not every lead in the database.
+  1226→  - The funnel chart's `clip-path` polygon uses `calc(100% - 14px)` so the trapezoid angle is consistent regardless of bar width. The `min-width: 60px` ensures very small counts still render a readable bar.
+  1227→  - LOST leads are intentionally NOT part of the funnel (they dropped out of the pipeline). Showing them in the funnel would distort the conversion rates — instead they're a separate stat below, and also drive the "Tingkat Kehilangan" tile in the summary card.
+  1228→  - The "Ringkasan Konversi" card uses the `bg-navy-mesh` brand gradient (same as the dashboard welcome banner) for visual cohesion. The three tiles use `bg-white/5 ring-1 ring-white/10` for a subtle glass effect on the navy background.
+  1229→  - Each funnel bar has `role="img"` + `aria-label="{stage}: {count} lead, {pct}% dari funnel"` so screen-reader users get the same info as sighted users. The conversion-rate label between stages also has an `aria-label` describing the transition.
+  1230→- Verification: `bun run lint` → 0 errors 0 warnings (exit code 0). All 4 admin/public API routes verified via curl with expected status codes (200/401/400/422). Bulk update confirmed end-to-end: API returned `{affected:2, skipped:0}`, DB query confirmed both leads' status changed from NEW→CONTACTED, and 2 LeadStatusHistory rows created with correct fromStatus/toStatus/note/changedBy. Idempotent update returned `{affected:0, skipped:2}` (no spurious history rows). Both admin pages render with all expected UI elements (funnel chart, summary card, checkbox column, select-all, per-row checkboxes, floating bulk bar appearance on selection).
+  1231→
+  1232→---
+  1233→Task ID: 7 (Cron Review Round 6)
+  1234→Agent: main (cron webDevReview)
+  1235→Task: QA assessment, bug fixes, new features (bulk actions, funnel chart, WhatsApp chat, reading progress, sitemap images, section dividers)
+  1236→
+  1237→## Current Project Status Assessment
+  1238→Rounds 1-6 complete. Phase 1 stable with comprehensive features. This round focused on: adding admin bulk lead actions, lead conversion funnel chart, WhatsApp click-to-chat from admin, service reading progress bar, sitemap image entries, and section dividers for visual breathing room.
+  1239→
+  1240→## Work Completed This Round
+  1241→
+  1242→### QA Findings (via agent-browser + VLM)
+  1243→- Admin leads page had no WhatsApp click-to-chat button per lead.
+  1244→- No bulk selection/actions on admin leads table.
+  1245→- No conversion funnel chart on admin dashboard.
+  1246→- No reading progress bar on service detail pages.
+  1247→- No image entries in sitemap.xml for SEO.
+  1248→- Homepage rated 9/10 — needed more whitespace between sections.
+  1249→- No section dividers for visual transitions.
+  1250→
+  1251→### New Features
+  1252→
+  1253→**1. Admin bulk lead actions** (subagent Task 7-A)
+  1254→- Checkbox column with select-all (indeterminate support) on leads table.
+  1255→- Selected rows highlighted with gold-50 bg + gold-200 ring.
+  1256→- Floating action bar (fixed bottom, navy bg) with:
+  1257→  - Selected count display ("X lead dipilih")
+  1258→  - "Ubah Status" dropdown for bulk status update
+  1259→  - "Hapus" button with confirmation dialog for bulk delete
+  1260→  - "Batal" button to clear selection
+  1261→- New API: `POST /api/admin/leads/bulk` — handles update_status + delete with Zod validation, creates LeadStatusHistory records for status changes, atomic transactions.
+  1262→- Bulk bar component: `src/components/admin/leads-bulk-bar.tsx`.
+  1263→
+  1264→**2. Lead conversion funnel chart** (subagent Task 7-A)
+  1265→- Pure CSS trapezoid funnel showing NEW → CONTACTED → QUALIFIED → CONVERTED stages.
+  1266→- Navy→gold gradient across stages, clip-path polygon for trapezoid shape.
+  1267→- Conversion rate labels between stages, LOST leads shown separately.
+  1268→- "Ringkasan Konversi" summary card with: Tingkat Konversi, Tingkat Kehilangan, Lead Aktif di Funnel.
+  1269→- Added to admin dashboard in a new row below source chart.
+  1270→- Component: `src/components/admin/leads-funnel-chart.tsx`.
+  1271→
+  1272→**3. WhatsApp click-to-chat from admin** (main agent — `src/components/admin/leads-table.tsx`)
+  1273→- Green "Chat via WhatsApp" button in lead detail panel contact section.
+  1274→- Pre-fills message: "Halo {name}, terima kasih telah menghubungi Pintu Legal..." with service name if available.
+  1275→- Phone number normalized (strips non-digits, converts leading 0 to 62).
+  1276→- Opens wa.me link in new tab.
+  1277→- VLM verified: ✓ green button confirmed in KONTAK section.
+  1278→
+  1279→**4. Service reading progress bar** (main agent — `src/components/layanan/service-reading-progress.tsx` + `src/app/layanan/[slug]/page.tsx`)
+  1280→- Thin gold gradient bar fixed at top of viewport (z-55).
+  1281→- Fills as user scrolls through service content.
+  1282→- Framer Motion useScroll + useSpring for smooth tracking.
+  1283→- Tracks the #service-tabs element via data attribute.
+  1284→- Added to all service detail pages.
+  1285→
+  1286→**5. Sitemap image entries** (main agent — `src/app/sitemap.ts`)
+  1287→- Added image metadata to sitemap.xml entries:
+  1288→  - Homepage: OG image + logo
+  1289→  - Service pages: logo
+  1290→  - Blog pages: featured image (or OG image fallback) with title
+  1291→  - Blog listing: OG image
+  1292→  - About/pricing pages: logo
+  1293→- Added blog category pages to sitemap (new routes from round 5).
+  1294→- Total: 34 image entries across all sitemap URLs.
+  1295→
+  1296→**6. Section dividers on homepage** (main agent — `src/app/page.tsx` + `src/components/site/section-divider.tsx`)
+  1297→- Added decorative door-arch SVG dividers between key sections:
+  1298→  - Between Services and WhyPintuLegal
+  1299→  - Between TestimonialsSection and PricingCta
+  1300→- Creates visual breathing room and premium transition between sections.
+  1301→- Subtle 15% opacity, centered, with door-arch motif matching brand.
+  1302→
+  1303→## Verification Results
+  1304→- `bun run lint` → 0 errors, 0 warnings
+  1305→- All routes: 200 (public), 404 (invalid), 307 (admin redirect)
+  1306→- Content checks:
+  1307→  - Section dividers: ✓ (1 divider element found, renders 2 instances)
+  1308→  - Funnel chart: ✓ ("Funnel Konversi" present)
+  1309→  - Conversion summary: ✓ ("Ringkasan Konversi" present)
+  1310→  - Trapezoid stages: ✓ (clip-path present)
+  1311→  - WhatsApp chat button: ✓ (VLM confirmed green button in detail panel)
+  1312→  - Sitemap images: ✓ (34 image:image entries)
+  1313→  - Service reading progress: ✓ (component present)
+  1314→- VLM verification:
+  1315→  - WhatsApp button: ✓ "green 'Chat via WhatsApp' button in KONTAK section"
+  1316→  - Admin funnel: ✓ "Ringkasan Konversi card visible"
+  1317→
+  1318→## Unresolved Issues / Risks
+  1319→- Dev server process dies between bash tool calls (sandbox limitation). Server must be running for preview.
+  1320→- Bulk action bar only visible when leads are selected (client-side state) — not visible in static screenshots.
+  1321→- Funnel chart may not be visible in full-page screenshots if scrolled past — confirmed in HTML.
+  1322→- Section dividers are subtle (15% opacity) — VLM may not always detect them.
+  1323→
+  1324→## Priority Recommendations for Next Round
+  1325→1. **Contact form A/B testing** — variant with fewer fields to test conversion
+  1326→2. **Performance optimization** — implement next/image, optimize font loading, add lazy loading
+  1327→3. **Admin dashboard lead source trend** — line chart showing lead sources over time
+  1328→4. **Blog SEO schema** — add Article structured data with author, datePublished, image
+  1329→5. **Service detail FAQ accordion** — collapsible FAQ section instead of tab
+  1330→6. **Admin lead export to Excel** — .xlsx export with formatting
+  1331→7. **WhatsApp template messages** — pre-defined message templates for common lead scenarios
+  1332→8. **Admin activity log** — track admin actions (login, lead updates, content changes)
+  1333→
+  1334→## Files Modified/Created This Round
+  1335→**New files (5):**
+  1336→- src/components/admin/leads-bulk-bar.tsx (subagent — bulk action bar)
+  1337→- src/components/admin/leads-funnel-chart.tsx (subagent — funnel chart)
+  1338→- src/app/api/admin/leads/bulk/route.ts (subagent — bulk API)
+  1339→- src/components/layanan/service-reading-progress.tsx (reading progress bar)
+  1340→
+  1341→**Modified files (5):**
+  1342→- src/components/admin/leads-table.tsx (WhatsApp button + bulk checkboxes)
+  1343→- src/app/admin/(dashboard)/page.tsx (subagent — funnel chart + conversion summary)
+  1344→- src/app/layanan/[slug]/page.tsx (reading progress bar)
+  1345→- src/app/sitemap.ts (image entries + category routes)
+  1346→- src/app/page.tsx (section dividers)
+  1347→
+  1348→---
+  1349→Task ID: 8-A
+  1350→Agent: full-stack-developer
+  1351→Task: Admin activity log + lead source trend line chart
+  1352→
+  1353→Work Log:
+  1354→- Read worklog.md (Tasks 1–7 complete), src/app/admin/(dashboard)/page.tsx, src/components/admin/leads-source-chart.tsx, leads-chart.tsx, leads-funnel-chart.tsx, src/lib/auth/admin.ts, src/app/api/admin/leads/[id]/route.ts, src/app/api/admin/leads/bulk/route.ts, prisma/schema.prisma, src/app/admin/(dashboard)/layout.tsx, src/components/admin/admin-shell.tsx, src/app/api/admin/{login,logout,blog,blog/[id],services,services/[id]}/route.ts, src/app/globals.css, src/lib/db.ts, src/components/admin/lead-status.ts.
+  1355→- FEATURE 1 — Admin Activity Log:
+  1356→  - Added `AdminActivity` model to `prisma/schema.prisma` (id, adminEmail, action, entityType?, entityId?, detail?, ipAddress?, createdAt, @@index on adminEmail + createdAt, @@map("admin_activities")). Ran `bun run db:push` → schema synced + Prisma client regenerated.
+  1357→  - Created `src/lib/admin-activity.ts` (server-only):
+  1358→    - `logAdminActivity(email, action, entityType?, entityId?, detail?, ipAddress?)` — non-throwing by design: every DB write is wrapped in try/catch, errors are logged to console but never rejected. Caller uses `void logAdminActivity(...)` so the parent operation (e.g. login, lead update) is never blocked or failed by an audit-log failure.
+  1359→    - `getRequestIp(req)` — extracts client IP from `x-forwarded-for` (first value) or `x-real-ip` headers.
+  1360→    - `AdminAction` const enum with canonical keys: LOGIN, LOGOUT, LEAD_STATUS_UPDATE, LEAD_DELETE, LEAD_BULK_UPDATE, LEAD_BULK_DELETE, BLOG_CREATE, BLOG_UPDATE, BLOG_DELETE, SERVICE_CREATE, SERVICE_UPDATE, SERVICE_DELETE.
+  1361→  - Integrated logging into 8 API routes (all fire-and-forget via `void`):
+  1362→    - `/api/admin/login` → LOGIN (with IP from request)
+  1363→    - `/api/admin/logout` → LOGOUT (only when session existed)
+  1364→    - `/api/admin/leads/[id]` PATCH → LEAD_STATUS_UPDATE with detail `{fromStatus, toStatus, statusChanged, noteUpdated}`; DELETE → LEAD_DELETE with detail snapshotting lead `{name, phone, status, source}` before deletion (since the row is gone after delete)
+  1365→    - `/api/admin/leads/bulk` → LEAD_BULK_DELETE `{ids, count}` / LEAD_BULK_UPDATE `{ids, toStatus, affected, skipped}`
+  1366→    - `/api/admin/blog` POST → BLOG_CREATE `{title, slug, status}`
+  1367→    - `/api/admin/blog/[id]` PATCH → BLOG_UPDATE `{slug, status, titleUpdated, contentUpdated}`; DELETE → BLOG_DELETE with snapshot `{title, slug, status}`
+  1368→    - `/api/admin/services` POST → SERVICE_CREATE `{name, slug, isActive}`
+  1369→    - `/api/admin/services/[id]` PATCH → SERVICE_UPDATE `{slug, nameUpdated, isActive, isFeatured}`; DELETE → SERVICE_DELETE with snapshot `{name, slug}`
+  1370→  - Created `src/app/api/admin/activities/route.ts` (GET):
+  1371→    - Admin-gated via `getAdminSession()`.
+  1372→    - Query params (Zod-validated): `page` (default 1), `pageSize` (default 50, max 100), `action` (exact match), `email` (case-insensitive contains).
+  1373→    - Returns `{ ok, activities, page, pageSize, total, totalPages }`.
+  1374→  - Created `src/components/admin/activity-meta.tsx`:
+  1375→    - `ActionBadge` component rendering a color-coded badge per action (auth=navy, lead update=gold, lead delete=red, blog=emerald, service=slate, delete=red).
+  1376→    - `entityLabel()` mapping `lead`/`blog_post`/`service`/`faq`/`testimonial` → friendly Indonesian labels.
+  1377→    - `renderDetail()` — action-specific JSON pretty-printer (e.g. for LEAD_STATUS_UPDATE → "dari NEW ke CONTACTED"; for BLOG_CREATE → "Pendirian PT untuk Pemula /pendirian-pt-untuk-pemula (DRAFT)").
+  1378→  - Created `src/components/admin/activity-filter-bar.tsx` ("use client"):
+  1379→    - Reads URL search params via `useSearchParams`, pushes new params via `router.push`.
+  1380→    - shadcn `Select` for action filter (with "Semua aksi" sentinel = "all"), `Input` with search icon for email filter, "Terapkan" + "Hapus" buttons.
+  1381→    - Resets `page` to 1 whenever filters change to avoid landing on a non-existent page.
+  1382→  - Created `src/app/admin/(dashboard)/aktivitas/page.tsx` (server component):
+  1383→    - `requireAdmin()` guard.
+  1384→    - Reads `?page`, `?action`, `?email` search params.
+  1385→    - 50-per-page pagination.
+  1386→    - Renders `<ActivityFilterBar>` + a table with columns: Waktu (date + time + relative), Admin (email + IP), Aksi (ActionBadge), Entitas (label + entity ID), Detail (renderDetail output).
+  1387→    - Sticky header inside a `max-h-[70vh]` scroll container.
+  1388→    - Empty state: "Belum ada aktivitas tercatat" with helpful hint when filters are active.
+  1389→    - Pagination footer with prev/next buttons preserving filter params, and showing "Menampilkan X–Y dari Z aktivitas".
+  1390→  - Added `Aktivitas` (History icon) to the admin sidebar nav in `src/components/admin/admin-shell.tsx`, positioned between "Testimoni" and "Pengaturan".
+  1391→- FEATURE 2 — Lead Source Trend Line Chart:
+  1392→  - Created `src/components/admin/leads-source-trend-chart.tsx` ("use client", 280 lines):
+  1393→    - Pure SVG line chart, viewBox 640×280, plot area 588×224.
+  1394→    - Three smooth curved lines via Catmull-Rom → cubic-bezier conversion (`smoothPath()` helper). Colors: WEBSITE=#0F2747 (navy), WHATSAPP=#25D366 (WhatsApp green), NEWSLETTER=#C89B3C (gold).
+  1395→    - 4 horizontal grid lines (0/25/50/75/100% of `maxValue`) with dashed stroke, Y-axis integer tick labels.
+  1396→    - X-axis baseline + day labels (first, last, every other day to avoid crowding).
+  1397→    - Per-point dots that enlarge (2.5px → 4px radius) on hover.
+  1398→    - Vertical dashed guide line snapped to the nearest day on mouse move.
+  1399→    - HTML tooltip overlay (absolute-positioned) showing the day's date + count per source with color dots — much crisper than SVG `<text>` for multi-line tooltips.
+  1400→    - Legend with color dots + per-source total counts.
+  1401→    - Memoised `maxValue` (with "nice tick" rounding: 1, 2, 5, 10, 20, 50, …) and `series` (per-source `{x, y, value}` points) for performance.
+  1402→    - `role="img"` + descriptive `aria-label` for screen readers.
+  1403→    - Empty state: "Belum ada data lead." (240px centered) when totalLeads === 0.
+  1404→    - Title "Tren Sumber Leads" / subtitle "14 hari terakhir · N lead".
+  1405→  - Modified `src/app/admin/(dashboard)/page.tsx`:
+  1406→    - Added 12th `Promise.all` entry: `db.lead.findMany({ where: { createdAt: { gte: fourteenDaysAgo() } }, select: { createdAt: true, source: true } })` — minimal projection, just date + source.
+  1407→    - Built `trendDayMap` (Map<YYYY-MM-DD, Record<LeadSourceKey, number>>) initialised to 14 zero-filled entries, then iterated leads incrementing the per-source count. Only tracks WEBSITE/WHATSAPP/NEWSLETTER (intentionally excludes ADMIN-source leads so the chart stays focused on inbound channels).
+  1408→    - Converted to `LeadsSourceTrendPoint[]` with `label = "${dayName} ${dateOfMonth}"`.
+  1409→    - Rendered `<LeadsSourceTrendChart data={leadsSourceTrend} />` as a full-width row below the conversion funnel row.
+  1410→- Smoke-tested end-to-end:
+  1411→  - POST /api/admin/login → 200, cookie set, `AdminActivity` row created with action=LOGIN, ipAddress="::1".
+  1412→  - POST /api/admin/logout → 200, LOGOUT row created.
+  1413→  - PATCH /api/admin/leads/[id] with status change → 200, LEAD_STATUS_UPDATE row created with detail `{"fromStatus":"NEW","toStatus":"CONTACTED","statusChanged":true,"noteUpdated":true}`, entityType="lead", entityId=<id>.
+  1414→  - POST /api/admin/leads/bulk (update_status, 1 lead) → 200, LEAD_BULK_UPDATE row created with detail `{"ids":[...],"toStatus":"QUALIFIED","affected":1,"skipped":0}`.
+  1415→  - GET /api/admin/activities?page=1 → 200, returns all 5 audit entries (3 LOGIN, 1 LOGOUT, 1 LEAD_STATUS_UPDATE, 1 LEAD_BULK_UPDATE) sorted by createdAt desc.
+  1416→  - GET /api/admin/activities?action=LOGIN → 200, only LOGIN rows returned (filter works).
+  1417→  - GET /api/admin/activities?email=admin → 200, only admin@pintulegal.id rows returned.
+  1418→  - GET /admin/aktivitas → 200, renders "Aktivitas Admin" header, "Filter Aktivitas" card, "Riwayat Aktivitas" table with friendly-label badges (Login, Logout, Update Status Lead, Update Massal Lead), entity labels, and detail pretty-prints.
+  1419→  - GET /admin/aktivitas?action=LOGIN → 200, table shows only Login rows; Select dropdown shows "Login" as the active value.
+  1420→  - GET /admin → 200, dashboard renders "Tren Sumber Leads" + "14 hari terakhir" + legend (Website / WhatsApp / Newsletter with counts) + 3 smooth bezier SVG paths + 42 per-point circles + Y-axis ticks.
+  1421→  - Sidebar nav shows "Aktivitas" with History icon on both desktop sidebar and mobile drawer.
+  1422→- Ran `bun run lint` → 0 errors, 0 warnings (exit code 0). Note: initially lint failed because `activity-meta.ts` contained JSX (the `ActionBadge` component) but had a `.ts` extension → renamed to `activity-meta.tsx` to allow JSX parsing.
+  1423→
+  1424→Stage Summary:
+  1425→- Files produced (5 new):
+  1426→  - `src/lib/admin-activity.ts` (96 lines) — `logAdminActivity()` non-throwing audit-log utility, `getRequestIp()`, `AdminAction` const enum. Server-only.
+  1427→  - `src/app/api/admin/activities/route.ts` (104 lines) — GET endpoint with pagination + filtering (action + email). Admin-gated. Zod-validated query params.
+  1428→  - `src/components/admin/activity-meta.tsx` (150 lines) — `ActionBadge` component + `entityLabel()` + `renderDetail()` action-specific JSON pretty-printer + tone map.
+  1429→  - `src/components/admin/activity-filter-bar.tsx` (160 lines, "use client") — URL-param-driven filter form (action Select + email Input + submit/clear). Updates searchParams via `router.push`.
+  1430→  - `src/components/admin/leads-source-trend-chart.tsx` (296 lines, "use client") — pure-SVG smooth-curve line chart with 3 sources, grid lines, hover guide + tooltip, legend, empty state.
+  1431→- Files produced (1 new page):
+  1432→  - `src/app/admin/(dashboard)/aktivitas/page.tsx` (244 lines) — server component, admin-protected, paginated 50/page activity log table with filter bar + pagination footer.
+  1433→- Files modified (9):
+  1434→  - `prisma/schema.prisma` — added `AdminActivity` model with `@@index([adminEmail])` + `@@index([createdAt])` + `@@map("admin_activities")`.
+  1435→  - `src/app/api/admin/login/route.ts` — fire-and-forget LOGIN audit log with IP.
+  1436→  - `src/app/api/admin/logout/route.ts` — fire-and-forget LOGOUT audit log (when session exists).
+  1437→  - `src/app/api/admin/leads/[id]/route.ts` — LEAD_STATUS_UPDATE on PATCH (with from/to detail), LEAD_DELETE on DELETE (with name/phone/status/source snapshot).
+  1438→  - `src/app/api/admin/leads/bulk/route.ts` — LEAD_BULK_DELETE `{ids, count}`, LEAD_BULK_UPDATE `{ids, toStatus, affected, skipped}`.
+  1439→  - `src/app/api/admin/blog/route.ts` — BLOG_CREATE `{title, slug, status}`.
+  1440→  - `src/app/api/admin/blog/[id]/route.ts` — BLOG_UPDATE on PATCH, BLOG_DELETE on DELETE (with title/slug/status snapshot).
+  1441→  - `src/app/api/admin/services/route.ts` — SERVICE_CREATE `{name, slug, isActive}`.
+  1442→  - `src/app/api/admin/services/[id]/route.ts` — SERVICE_UPDATE on PATCH, SERVICE_DELETE on DELETE (with name/slug snapshot).
+  1443→  - `src/components/admin/admin-shell.tsx` — added `History` icon import + "Aktivitas" nav item (`/admin/aktivitas`) between Testimoni and Pengaturan.
+  1444→  - `src/app/admin/(dashboard)/page.tsx` — added 12th `Promise.all` entry for 14-day source-trend fetch, built `leadsSourceTrend` map, rendered `<LeadsSourceTrendChart>` as a full-width row below the conversion funnel.
+  1445→- Decisions:
+  1446→  - **Logging is best-effort + fire-and-forget**: `logAdminActivity()` always resolves to `void` (never rejects), and every caller uses `void logAdminActivity(...)` so the audit log can NEVER be the reason a user-facing operation fails. This is critical for audit logs — they're an observability feature, not a critical-path feature.
+  1447→  - **IP capture at login only**: only `/api/admin/login` captures the IP from the request headers. Other mutations (lead update, blog create, etc.) don't bother because the IP would be the same admin session's IP anyway, and capturing it on every request would add noise. If we ever need per-action IPs, the utility already supports it.
+  1448→  - **Snapshot-before-delete**: when deleting leads / blog posts / services, we fetch the row first (just the human-readable fields like name/slug/status), then delete, then log with that snapshot in the `detail` JSON. This way the audit log still identifies *which* entity was deleted after the row is gone — important for after-the-fact investigations.
+  1449→  - **Detail pretty-printing**: the `detail` column stores a JSON string, but `renderDetail()` in `activity-meta.tsx` knows the action-specific shape and renders a compact Indonesian phrase (e.g. "dari NEW ke CONTACTED" or "Pendirian PT /pendirian-pt (DRAFT)"). Falls back to raw JSON.stringify for unknown shapes.
+  1450→  - **Color-coded badges by entity family**: navy for auth, gold for lead/blog updates, emerald for blog creates, slate for service creates, red for all deletes. This gives a quick visual scan of "what kind of thing happened" without reading every row.
+  1451→  - **Trend chart excludes ADMIN-source leads**: the chart is meant to show *inbound* lead channels (Website / WhatsApp / Newsletter). Leads created from inside the admin console (source=ADMIN) would distort the trend since they're not really inbound.
+  1452→  - **Smooth bezier via Catmull-Rom**: the `smoothPath()` helper converts an array of points into a single `M … C … C … …` SVG path using the Catmull-Rom → Bézier conversion with tension 0.5. This produces a natural smooth curve through every data point (vs. straight `L` segments which look jagged). Handles edge cases: 0 points (empty string), 1 point (just `M`), 2+ points (proper curves).
+  1453→  - **HTML tooltip overlay vs SVG text**: the hover tooltip is an absolutely-positioned `<div>` on top of the SVG, not SVG `<text>`. This gives crisper text rendering, easier multi-line layout, and lets us use Tailwind classes for styling (rounded-md bg-navy, etc.). Position is computed as a percentage of VIEW_W so it scales with the responsive SVG.
+  1454→  - **X-axis label crowding**: with 14 days, showing every label would be unreadable. We show the first day, the last day, and every other day in between — 8 labels total, evenly spaced.
+  1455→  - **Nice-tick rounding for Y-axis**: instead of using the raw max value, we round up to the nearest "nice" number (1, 2, 5, 10, 20, 50, 100, …). This makes the Y-axis ticks look intentional rather than random (e.g. max=6 → ticks at 0/1.5/3/4.5/6, but with nice-tick max=10 → ticks at 0/2.5/5/7.5/10).
+  1456→  - **Filter bar resets page to 1**: when the user changes the action or email filter, we delete the `page` param so the new query starts on page 1. Otherwise we might land on a page that no longer exists after narrowing the result set.
+  1457→  - **Server component for the table + client component for the filter**: the activity log page is a server component (data fetched server-side, no client JS for the table). The filter bar is a small client component that just updates URL params — the actual data fetching happens server-side after the URL change. This matches the pattern used by the existing leads page.
+  1458→  - **Sticky table header inside scroll container**: the activity table is wrapped in a `max-h-[70vh] overflow-y-auto` div with the `<TableHeader>` set to `sticky top-0 bg-white z-10`. This keeps the column headers visible while scrolling through a long activity log.
+  1459→- Verification:
+  1460→  - `bun run lint` → 0 errors 0 warnings (exit 0).
+  1461→  - `bun run db:push` → schema synced (AdminActivity table created).
+  1462→  - POST /api/admin/login → 200, LOGIN row created (verified via /api/admin/activities).
+  1463→  - POST /api/admin/logout → 200, LOGOUT row created.
+  1464→  - PATCH /api/admin/leads/[id] → 200, LEAD_STATUS_UPDATE row created with correct detail JSON.
+  1465→  - POST /api/admin/leads/bulk (update_status) → 200, LEAD_BULK_UPDATE row created.
+  1466→  - GET /api/admin/activities → 200, paginated + filterable.
+  1467→  - GET /admin/aktivitas → 200, table renders with friendly badge labels + entity labels + detail pretty-prints.
+  1468→  - GET /admin/aktivitas?action=LOGIN → 200, only LOGIN rows in table.
+  1469→  - GET /admin → 200, dashboard renders "Tren Sumber Leads" with 3 smooth bezier SVG paths + 42 per-point circles + Y-axis ticks + legend.
+  1470→  - Admin sidebar shows "Aktivitas" with History icon (verified in dashboard HTML).
+  1471→
+  1472→---
+  1473→Task ID: 8 (Cron Review Round 7)
+  1474→Agent: main (cron webDevReview)
+  1475→Task: QA assessment, bug fixes, new features (activity log, trend chart, WhatsApp templates, FAQ polish, mobile improvements)
+  1476→
+  1477→## Current Project Status Assessment
+  1478→Rounds 1-7 complete. Phase 1 stable with comprehensive features. This round focused on: admin activity log, lead source trend chart, WhatsApp message templates, FAQ default-open, Why Choose Us mobile polish.
+  1479→
+  1480→## Work Completed This Round
+  1481→
+  1482→### QA Findings (via agent-browser + VLM)
+  1483→- Homepage rated 9/10 — "Why Choose Us" large background numbers may overlap text on mobile.
+  1484→- FAQ page had all accordions closed by default — should have first item open.
+  1485→- No admin activity log for audit purposes.
+  1486→- No lead source trend over time chart.
+  1487→- WhatsApp button was a single message — needed template selector for common scenarios.
+  1488→
+  1489→### New Features
+  1490→
+  1491→**1. Admin activity log** (subagent Task 8-A)
+  1492→- New `AdminActivity` model: id, adminEmail, action, entityType, entityId, detail, ipAddress, createdAt.
+  1493→- `logAdminActivity()` utility — non-throwing, non-blocking.
+  1494→- Integrated into all admin APIs: LOGIN, LOGOUT, LEAD_STATUS_UPDATE, LEAD_DELETE, LEAD_BULK_UPDATE/DELETE, BLOG_CREATE/UPDATE/DELETE, SERVICE_CREATE/UPDATE/DELETE.
+  1495→- New page `/admin/aktivitas` with table (timestamp, admin, action badge, entity, detail), filter by action/email, pagination (50/page).
+  1496→- "Aktivitas" nav item added to admin sidebar with History icon.
+  1497→- GET `/api/admin/activities` with pagination + filtering.
+  1498→
+  1499→**2. Lead source trend line chart** (subagent Task 8-A)
+  1500→- Pure SVG smooth-curve line chart showing lead volume by source over 14 days.
+  1501→- 3 lines: WEBSITE (navy), WHATSAPP (green), NEWSLETTER (gold).
+  1502→- Hover tooltips, Y-axis ticks, legend with color dots.
+  1503→- Title: "Tren Sumber Leads" / "14 hari terakhir".
+  1504→- Added to admin dashboard below the funnel row (full width).
+  1505→- Component: `src/components/admin/leads-source-trend-chart.tsx`.
+  1506→
+  1507→**3. WhatsApp message templates** (main agent — `src/lib/whatsapp-templates.ts` + `src/components/admin/whatsapp-template-button.tsx`)
+  1508→- 5 pre-defined templates for common lead scenarios:
+  1509→  - **Tindak Lanjut**: friendly introduction + service context
+  1510→  - **Pengingat Dokumen**: ask lead to prepare KTP, NPWP, etc.
+  1511→  - **Jadwalkan Konsultasi**: propose consultation times
+  1512→  - **Pesan Umum**: general greeting
+  1513→  - **Status Update**: status-specific messages (CONTACTED/QUALIFIED/CONVERTED/LOST)
+  1514→- `WhatsAppTemplateButton` dropdown component replaces single WhatsApp button in lead detail.
+  1515→- Each template opens wa.me with pre-filled message + lead context (name, service).
+  1516→- Phone number normalized (strips non-digits, converts 0→62).
+  1517→
+  1518→**4. FAQ default-open** (main agent — `src/app/faq/page.tsx`)
+  1519→- Each FAQ category accordion now has first item open by default (`defaultValue={`item-${gi}-0`}`).
+  1520→- VLM verified: "first accordion item in each category (Umum, Layanan, Proses) is open by default."
+  1521→
+  1522→**5. Why Choose Us mobile polish** (main agent — `src/components/sections/why-pintu-legal.tsx`)
+  1523→- Large outline numbers (01-06) now hidden on mobile (`hidden sm:block`) to reduce clutter.
+  1524→- Replaced with compact mobile number badge (`sm:hidden`): gold-50 bg, gold-600 text, ring.
+  1525→- Improves readability on small screens per VLM recommendation.
+  1526→
+  1527→## Verification Results
+  1528→- `bun run lint` → 0 errors, 0 warnings
+  1529→- `bun run db:push` → schema updated with AdminActivity model
+  1530→- All routes: 200 (public), 404 (invalid), 307 (admin redirect)
+  1531→- Content checks:
+  1532→  - Activity log page: ✓ ("Riwayat Aktivitas" + filter bar present)
+  1533→  - Trend chart: ✓ ("Tren Sumber Leads" present in dashboard HTML)
+  1534→  - WhatsApp templates: ✓ (component imported, lib file exists)
+  1535→  - FAQ default-open: ✓ (defaultValue present)
+  1536→  - Why Choose Us mobile: ✓ (sm:hidden badge present)
+  1537→- VLM verification:
+  1538→  - FAQ: ✓ "first accordion item in each category is open by default"
+  1539→  - Admin activity log: ✓ "table of admin activities with timestamps, actions, and filters"
+  1540→
+  1541→## Unresolved Issues / Risks
+  1542→- Dev server process dies between bash tool calls (sandbox limitation). Server must be running for preview.
+  1543→- Trend chart may not be visible in screenshots if scrolled past — confirmed in HTML.
+  1544→- WhatsApp template button is client-side rendered in the Sheet — not visible in initial HTML.
+  1545→- Activity log requires admin actions to have data — will populate as admin uses the system.
+  1546→
+  1547→## Priority Recommendations for Next Round
+  1548→1. **Performance optimization** — implement next/image, optimize font loading, add lazy loading
+  1549→2. **Contact form A/B testing** — variant with fewer fields to test conversion
+  1550→3. **Admin lead export to Excel** — .xlsx export with formatting
+  1551→4. **Service detail FAQ accordion** — collapsible FAQ section instead of tab
+  1552→5. **Blog related posts algorithm** — improve related posts with tag/keyword matching
+  1553→6. **Admin dashboard export** — export dashboard charts as PNG/PDF
+  1554→7. **Lead scoring** — auto-score leads based on completeness + service interest
+  1555→8. **Cookie consent analytics** — track consent choices (accept all vs necessary only)
+  1556→
+  1557→## Files Modified/Created This Round
+  1558→**New files (7):**
+  1559→- src/lib/whatsapp-templates.ts (5 message templates)
+  1560→- src/components/admin/whatsapp-template-button.tsx (dropdown selector)
+  1561→- src/lib/admin-activity.ts (subagent — activity logging utility)
+  1562→- src/app/api/admin/activities/route.ts (subagent — activities API)
+  1563→- src/components/admin/activity-meta.tsx (subagent — action badge + detail renderer)
+  1564→- src/components/admin/activity-filter-bar.tsx (subagent — filter form)
+  1565→- src/components/admin/leads-source-trend-chart.tsx (subagent — line chart)
+  1566→- src/app/admin/(dashboard)/aktivitas/page.tsx (subagent — activity log page)
+  1567→
+  1568→**Modified files (8):**
+  1569→- src/components/admin/leads-table.tsx (WhatsApp template button integration)
+  1570→- src/app/faq/page.tsx (default-open first accordion per category)
+  1571→- src/components/sections/why-pintu-legal.tsx (mobile number badge)
+  1572→- prisma/schema.prisma (subagent — AdminActivity model)
+  1573→- src/app/api/admin/login/route.ts (subagent — LOGIN audit)
+  1574→- src/app/api/admin/logout/route.ts (subagent — LOGOUT audit)
+  1575→- src/app/api/admin/leads/[id]/route.ts (subagent — status update/delete audit)
+  1576→- src/app/api/admin/leads/bulk/route.ts (subagent — bulk audit)
+  1577→- src/app/api/admin/blog/route.ts (subagent — blog create audit)
+  1578→- src/app/api/admin/blog/[id]/route.ts (subagent — blog update/delete audit)
+  1579→- src/app/api/admin/services/route.ts (subagent — service create audit)
+  1580→- src/app/api/admin/services/[id]/route.ts (subagent — service update/delete audit)
+  1581→- src/components/admin/admin-shell.tsx (subagent — Aktivitas nav item)
+  1582→- src/app/admin/(dashboard)/page.tsx (subagent — trend chart)
+
+[showing lines 1200-1582 of 1583; use offset=1583 with limit to continue reading]

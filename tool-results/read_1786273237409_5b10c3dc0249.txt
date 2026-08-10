@@ -1,0 +1,883 @@
+     1→"use client";
+     2→
+     3→import * as React from "react";
+     4→import { format } from "date-fns";
+     5→import { id as idLocale } from "date-fns/locale";
+     6→import {
+     7→  Loader2,
+     8→  Trash2,
+     9→  Save,
+    10→  Search,
+    11→  Eye,
+    12→  MessageSquare,
+    13→  Phone,
+    14→  Mail,
+    15→  Building2,
+    16→  Clock,
+    17→  Download,
+    18→  Inbox,
+    19→  CalendarRange,
+    20→  Filter as FilterIcon,
+    21→  RotateCcw,
+    22→  MessageCircle,
+    23→} from "lucide-react";
+    24→import { toast } from "sonner";
+    25→
+    26→import { cn } from "@/lib/utils";
+    27→import { Badge } from "@/components/ui/badge";
+    28→import { Button } from "@/components/ui/button";
+    29→import { Checkbox } from "@/components/ui/checkbox";
+    30→import { Input } from "@/components/ui/input";
+    31→import { Label } from "@/components/ui/label";
+    32→import { Textarea } from "@/components/ui/textarea";
+    33→import {
+    34→  Select,
+    35→  SelectContent,
+    36→  SelectItem,
+    37→  SelectTrigger,
+    38→  SelectValue,
+    39→} from "@/components/ui/select";
+    40→import {
+    41→  Sheet,
+    42→  SheetContent,
+    43→  SheetDescription,
+    44→  SheetHeader,
+    45→  SheetTitle,
+    46→} from "@/components/ui/sheet";
+    47→import {
+    48→  Table,
+    49→  TableBody,
+    50→  TableCell,
+    51→  TableHead,
+    52→  TableHeader,
+    53→  TableRow,
+    54→} from "@/components/ui/table";
+    55→import {
+    56→  LEAD_STATUS,
+    57→  LEAD_STATUS_ORDER,
+    58→  leadStatusBadgeClass,
+    59→  type LeadStatusKey,
+    60→  type LeadStatusHistoryEntry,
+    61→} from "@/components/admin/lead-status";
+    62→import { LeadStatusTimeline } from "@/components/admin/lead-status-timeline";
+    63→import { LeadsBulkBar } from "@/components/admin/leads-bulk-bar";
+    64→import { WhatsAppTemplateButton } from "@/components/admin/whatsapp-template-button";
+    65→
+    66→export type LeadRow = {
+    67→  id: string;
+    68→  name: string;
+    69→  phone: string;
+    70→  email: string;
+    71→  businessName: string;
+    72→  message: string;
+    73→  status: string;
+    74→  source: string;
+    75→  note: string;
+    76→  serviceId: string;
+    77→  serviceName: string | null;
+    78→  serviceSlug: string | null;
+    79→  createdAt: string;
+    80→  updatedAt: string;
+    81→  statusHistories: LeadStatusHistoryEntry[];
+    82→};
+    83→
+    84→type ServiceOption = { id: string; name: string };
+    85→
+    86→const STATUS_FILTERS: { key: "ALL" | LeadStatusKey; label: string }[] = [
+    87→  { key: "ALL", label: "Semua" },
+    88→  ...LEAD_STATUS_ORDER.map((k) => ({ key: k, label: LEAD_STATUS[k].label })),
+    89→];
+    90→
+    91→function formatDate(iso: string): string {
+    92→  try {
+    93→    return format(new Date(iso), "d MMM yyyy, HH:mm", { locale: idLocale });
+    94→  } catch {
+    95→    return iso;
+    96→  }
+    97→}
+    98→
+    99→function relativeDate(iso: string): string {
+   100→  const diff = Date.now() - new Date(iso).getTime();
+   101→  const min = Math.floor(diff / 60000);
+   102→  if (min < 1) return "baru saja";
+   103→  if (min < 60) return `${min} mnt lalu`;
+   104→  const hr = Math.floor(min / 60);
+   105→  if (hr < 24) return `${hr} jam lalu`;
+   106→  const day = Math.floor(hr / 24);
+   107→  if (day < 30) return `${day} hari lalu`;
+   108→  return formatDate(iso);
+   109→}
+   110→
+   111→/** Lead is considered "stale" if it has been NEW or CONTACTED for >48h
+   112→ *  since its last update. Used by the dashboard warning card + the
+   113→ *  `?stale=1` deep-link filter on the leads page. */
+   114→const STALE_MS = 48 * 60 * 60 * 1000;
+   115→const STALE_STATUSES = new Set(["NEW", "CONTACTED"]);
+   116→
+   117→export function isStaleLead(lead: { status: string; updatedAt: string }): boolean {
+   118→  if (!STALE_STATUSES.has(lead.status)) return false;
+   119→  return Date.now() - new Date(lead.updatedAt).getTime() > STALE_MS;
+   120→}
+   121→
+   122→/**
+   123→ * Trigger a CSV download of the given leads.
+   124→ *
+   125→ * If a date range is applied (from/to), the filename follows the pattern
+   126→ * `leads-{from}-to-{to}.csv` so the exported file is self-describing.
+   127→ * Missing ends use `mulai` (start) / `kini` (now) so the filename stays
+   128→ * readable. Without a date range the legacy `pintu-legal-leads-{today}.csv`
+   129→ * name is used.
+   130→ */
+   131→function exportCsv(rows: LeadRow[], from?: string, to?: string) {
+   132→  const headers = [
+   133→    "Nama",
+   134→    "Telepon",
+   135→    "Email",
+   136→    "Bisnis",
+   137→    "Layanan",
+   138→    "Status",
+   139→    "Sumber",
+   140→    "Catatan",
+   141→    "Pesan",
+   142→    "Dibuat",
+   143→  ];
+   144→  const lines = [headers.join(",")];
+   145→  for (const r of rows) {
+   146→    const cells = [
+   147→      r.name,
+   148→      r.phone,
+   149→      r.email,
+   150→      r.businessName,
+   151→      r.serviceName ?? "",
+   152→      r.status,
+   153→      r.source,
+   154→      r.note,
+   155→      r.message,
+   156→      r.createdAt,
+   157→    ].map((c) => `"${String(c).replace(/"/g, '""')}"`);
+   158→    lines.push(cells.join(","));
+   159→  }
+   160→  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+   161→  const url = URL.createObjectURL(blob);
+   162→  const a = document.createElement("a");
+   163→  a.href = url;
+   164→  let filename: string;
+   165→  if (from || to) {
+   166→    const fromPart = from || "mulai";
+   167→    const toPart = to || "kini";
+   168→    filename = `leads-${fromPart}-to-${toPart}.csv`;
+   169→  } else {
+   170→    filename = `pintu-legal-leads-${format(new Date(), "yyyy-MM-dd")}.csv`;
+   171→  }
+   172→  a.download = filename;
+   173→  document.body.appendChild(a);
+   174→  a.click();
+   175→  document.body.removeChild(a);
+   176→  URL.revokeObjectURL(url);
+   177→}
+   178→
+   179→export function LeadsTable({
+   180→  leads,
+   181→  services,
+   182→}: {
+   183→  leads: LeadRow[];
+   184→  services: ServiceOption[];
+   185→}) {
+   186→  const [filter, setFilter] = React.useState<"ALL" | LeadStatusKey>("ALL");
+   187→  const [search, setSearch] = React.useState("");
+   188→  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+   189→  // "Perlu Perhatian" toggle — when active, only stale leads (NEW/CONTACTED,
+   190→  // not updated >48h) are shown. Initialised from `?stale=1` URL param so the
+   191→  // dashboard warning card can deep-link here.
+   192→  const [staleOnly, setStaleOnly] = React.useState(false);
+   193→
+   194→  // Bulk-selection state. Tracks the IDs the operator has checked across the
+   195→  // whole table (not just the currently-filtered view). We use a Set for O(1)
+   196→  // membership checks and replace it with a fresh instance on every mutation
+   197→  // so React + the immutability lint rule both stay happy.
+   198→  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+   199→    () => new Set()
+   200→  );
+   201→
+   202→  // Date range filter state. `dateFrom`/`dateTo` track the input boxes
+   203→  // (uncommitted); `appliedFrom`/`appliedTo` are the values actually used
+   204→  // by the filter. The "Filter" button commits the inputs; "Reset" clears
+   205→  // both layers.
+   206→  const [dateFrom, setDateFrom] = React.useState("");
+   207→  const [dateTo, setDateTo] = React.useState("");
+   208→  const [appliedFrom, setAppliedFrom] = React.useState("");
+   209→  const [appliedTo, setAppliedTo] = React.useState("");
+   210→
+   211→  const hasAppliedDateFilter = Boolean(appliedFrom || appliedTo);
+   212→  const hasDirtyDateInputs =
+   213→    dateFrom !== appliedFrom || dateTo !== appliedTo;
+   214→  const canResetDateFilter =
+   215→    Boolean(dateFrom || dateTo || appliedFrom || appliedTo || staleOnly);
+   216→
+   217→  // Read `?stale=1` from the URL on mount (deep-link from the dashboard
+   218→  // "Perlu Perhatian" card). Also clears the param so it doesn't linger
+   219→  // in the address bar after the user navigates away.
+   220→  React.useEffect(() => {
+   221→    if (typeof window === "undefined") return;
+   222→    const params = new URLSearchParams(window.location.search);
+   223→    if (params.get("stale") === "1") {
+   224→      setStaleOnly(true);
+   225→      params.delete("stale");
+   226→      const next = params.toString();
+   227→      const nextUrl =
+   228→        window.location.pathname + (next ? `?${next}` : "") + window.location.hash;
+   229→      window.history.replaceState(null, "", nextUrl);
+   230→    }
+   231→  }, []);
+   232→
+   233→  const staleCount = React.useMemo(
+   234→    () => leads.filter(isStaleLead).length,
+   235→    [leads]
+   236→  );
+   237→
+   238→  const filtered = React.useMemo(() => {
+   239→    let list = leads;
+   240→    if (staleOnly) {
+   241→      list = list.filter(isStaleLead);
+   242→    } else if (filter !== "ALL") {
+   243→      list = list.filter((l) => l.status === filter);
+   244→    }
+   245→
+   246→    if (appliedFrom || appliedTo) {
+   247→      const fromMs = appliedFrom
+   248→        ? new Date(appliedFrom + "T00:00:00").getTime()
+   249→        : -Infinity;
+   250→      const toMs = appliedTo
+   251→        ? new Date(appliedTo + "T23:59:59.999").getTime()
+   252→        : Infinity;
+   253→      list = list.filter((l) => {
+   254→        const t = new Date(l.createdAt).getTime();
+   255→        return t >= fromMs && t <= toMs;
+   256→      });
+   257→    }
+   258→
+   259→    const q = search.trim().toLowerCase();
+   260→    if (q) {
+   261→      list = list.filter(
+   262→        (l) =>
+   263→          l.name.toLowerCase().includes(q) ||
+   264→          l.phone.toLowerCase().includes(q) ||
+   265→          l.email.toLowerCase().includes(q) ||
+   266→          (l.businessName ?? "").toLowerCase().includes(q) ||
+   267→          (l.serviceName ?? "").toLowerCase().includes(q)
+   268→      );
+   269→    }
+   270→    return list;
+   271→  }, [leads, filter, search, appliedFrom, appliedTo, staleOnly]);
+   272→
+   273→  const handleApplyDateFilter = React.useCallback(() => {
+   274→    setAppliedFrom(dateFrom);
+   275→    setAppliedTo(dateTo);
+   276→  }, [dateFrom, dateTo]);
+   277→
+   278→  const handleResetDateFilter = React.useCallback(() => {
+   279→    setDateFrom("");
+   280→    setDateTo("");
+   281→    setAppliedFrom("");
+   282→    setAppliedTo("");
+   283→    setStaleOnly(false);
+   284→    setFilter("ALL");
+   285→  }, []);
+   286→
+   287→  // ─── Bulk selection helpers ───────────────────────────────────────────────
+   288→  const toggleSelect = React.useCallback((id: string) => {
+   289→    setSelectedIds((prev) => {
+   290→      const next = new Set(prev);
+   291→      if (next.has(id)) next.delete(id);
+   292→      else next.add(id);
+   293→      return next;
+   294→    });
+   295→  }, []);
+   296→
+   297→  const clearSelection = React.useCallback(() => {
+   298→    setSelectedIds(new Set());
+   299→  }, []);
+   300→
+   301→  // "Select all" only operates on the currently-filtered rows so the operator
+   302→  // can check "everything I'm looking at right now" without affecting leads
+   303→  // hidden behind a filter.
+   304→  const allVisibleSelected =
+   305→    filtered.length > 0 && filtered.every((l) => selectedIds.has(l.id));
+   306→  const someVisibleSelected =
+   307→    !allVisibleSelected && filtered.some((l) => selectedIds.has(l.id));
+   308→
+   309→  const toggleSelectAllVisible = React.useCallback(() => {
+   310→    setSelectedIds((prev) => {
+   311→      const next = new Set(prev);
+   312→      if (filtered.every((l) => next.has(l.id))) {
+   313→        for (const l of filtered) next.delete(l.id);
+   314→      } else {
+   315→        for (const l of filtered) next.add(l.id);
+   316→      }
+   317→      return next;
+   318→    });
+   319→  }, [filtered]);
+   320→
+   321→  const handleRefresh = React.useCallback(() => {
+   322→    setSelectedIds(new Set());
+   323→    window.location.reload();
+   324→  }, []);
+   325→
+   326→  const selected = React.useMemo(
+   327→    () => leads.find((l) => l.id === selectedId) ?? null,
+   328→    [leads, selectedId]
+   329→  );
+   330→
+   331→  return (
+   332→    <div className="space-y-4">
+   333→      {/* Filter bar */}
+   334→      <div className="flex flex-col gap-3">
+   335→        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+   336→          <div className="flex flex-wrap gap-1.5">
+   337→            {STATUS_FILTERS.map((f) => {
+   338→              const active = !staleOnly && filter === f.key;
+   339→              const count =
+   340→                f.key === "ALL"
+   341→                  ? leads.length
+   342→                  : leads.filter((l) => l.status === f.key).length;
+   343→              return (
+   344→                <button
+   345→                  key={f.key}
+   346→                  onClick={() => {
+   347→                    setStaleOnly(false);
+   348→                    setFilter(f.key);
+   349→                  }}
+   350→                  className={cn(
+   351→                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
+   352→                    active
+   353→                      ? "bg-navy text-white border-navy"
+   354→                      : "bg-white text-ink-soft border-border hover:border-navy/30 hover:text-navy"
+   355→                  )}
+   356→                >
+   357→                  {f.label}
+   358→                  <span
+   359→                    className={cn(
+   360→                      "tabular-nums text-[10px] rounded-full px-1.5 py-0.5",
+   361→                      active
+   362→                        ? "bg-white/20 text-white"
+   363→                        : "bg-surface-alt text-ink-soft"
+   364→                    )}
+   365→                  >
+   366→                    {count}
+   367→                  </span>
+   368→                </button>
+   369→              );
+   370→            })}
+   371→            {staleCount > 0 && (
+   372→              <button
+   373→                onClick={() => setStaleOnly((v) => !v)}
+   374→                className={cn(
+   375→                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
+   376→                  staleOnly
+   377→                    ? "bg-gold-600 text-white border-gold-600"
+   378→                    : "bg-gold-50 text-gold-700 border-gold-200 hover:border-gold-400 hover:text-gold-700"
+   379→                )}
+   380→                title="Lead dengan status Baru/Dihubungi yang belum diperbarui >48 jam"
+   381→              >
+   382→                <Clock className="size-3.5" />
+   383→                Perlu Perhatian
+   384→                <span
+   385→                  className={cn(
+   386→                    "tabular-nums text-[10px] rounded-full px-1.5 py-0.5",
+   387→                    staleOnly
+   388→                      ? "bg-white/20 text-white"
+   389→                      : "bg-gold-200 text-gold-700"
+   390→                  )}
+   391→                >
+   392→                  {staleCount}
+   393→                </span>
+   394→              </button>
+   395→            )}
+   396→          </div>
+   397→          <div className="flex gap-2">
+   398→            <div className="relative flex-1 sm:w-64 sm:flex-none">
+   399→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-soft" />
+   400→              <Input
+   401→                placeholder="Cari nama, telepon, email…"
+   402→                value={search}
+   403→                onChange={(e) => setSearch(e.target.value)}
+   404→                className="pl-9 h-9"
+   405→              />
+   406→            </div>
+   407→            <Button
+   408→              variant="outline"
+   409→              size="sm"
+   410→              className="h-9"
+   411→              onClick={() => exportCsv(filtered, appliedFrom, appliedTo)}
+   412→              disabled={filtered.length === 0}
+   413→            >
+   414→              <Download className="size-4" />
+   415→              <span className="hidden sm:inline">CSV</span>
+   416→            </Button>
+   417→          </div>
+   418→        </div>
+   419→
+   420→        {/* Date range filter row */}
+   421→        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-alt/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+   422→          <div className="flex flex-wrap items-center gap-2">
+   423→            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-soft">
+   424→              <CalendarRange className="size-3.5 text-gold-600" />
+   425→              Rentang tanggal
+   426→            </span>
+   427→            <div className="flex items-center gap-1.5">
+   428→              <Input
+   429→                type="date"
+   430→                value={dateFrom}
+   431→                onChange={(e) => setDateFrom(e.target.value)}
+   432→                aria-label="Dari tanggal"
+   433→                className="h-9 w-[150px] text-sm"
+   434→              />
+   435→              <span className="text-ink-soft" aria-hidden>
+   436→                —
+   437→              </span>
+   438→              <Input
+   439→                type="date"
+   440→                value={dateTo}
+   441→                onChange={(e) => setDateTo(e.target.value)}
+   442→                aria-label="Sampai tanggal"
+   443→                className="h-9 w-[150px] text-sm"
+   444→              />
+   445→            </div>
+   446→            <Button
+   447→              type="button"
+   448→              variant="outline"
+   449→              size="sm"
+   450→              className="h-9 border-navy-200 bg-white text-navy hover:bg-navy-50 hover:text-navy"
+   451→              onClick={handleApplyDateFilter}
+   452→              disabled={!hasDirtyDateInputs}
+   453→            >
+   454→              <FilterIcon className="size-3.5" />
+   455→              Filter
+   456→            </Button>
+   457→            <Button
+   458→              type="button"
+   459→              variant="ghost"
+   460→              size="sm"
+   461→              className="h-9 text-ink-soft hover:text-navy"
+   462→              onClick={handleResetDateFilter}
+   463→              disabled={!canResetDateFilter}
+   464→            >
+   465→              <RotateCcw className="size-3.5" />
+   466→              Reset
+   467→            </Button>
+   468→          </div>
+   469→          <p className="text-xs text-ink-soft" aria-live="polite">
+   470→            {hasAppliedDateFilter || filter !== "ALL" || search || staleOnly ? (
+   471→              <>
+   472→                Menampilkan{" "}
+   473→                <span className="font-semibold text-navy">
+   474→                  {filtered.length}
+   475→                </span>{" "}
+   476→                dari {leads.length} lead
+   477→                {staleOnly && (
+   478→                  <>
+   479→                    {" "}
+   480→                    · <span className="text-gold-700">filter: perlu perhatian</span>
+   481→                  </>
+   482→                )}
+   483→              </>
+   484→            ) : (
+   485→              <>
+   486→                Total{" "}
+   487→                <span className="font-semibold text-navy">
+   488→                  {leads.length}
+   489→                </span>{" "}
+   490→                lead
+   491→              </>
+   492→            )}
+   493→          </p>
+   494→        </div>
+   495→      </div>
+   496→
+   497→      {/* Table */}
+   498→      <div className="rounded-xl border border-border bg-white shadow-soft overflow-hidden">
+   499→        <Table>
+   500→          <TableHeader>
+   501→            <TableRow className="hover:bg-transparent bg-surface-alt/50">
+   502→              <TableHead className="w-12 pl-4">
+   503→                <Checkbox
+   504→                  aria-label={
+   505→                    allVisibleSelected
+   506→                      ? "Batal pilih semua lead di halaman ini"
+   507→                      : "Pilih semua lead di halaman ini"
+   508→                  }
+   509→                  checked={
+   510→                    allVisibleSelected
+   511→                      ? true
+   512→                      : someVisibleSelected
+   513→                        ? "indeterminate"
+   514→                        : false
+   515→                  }
+   516→                  onCheckedChange={toggleSelectAllVisible}
+   517→                  className="data-[state=checked]:bg-navy data-[state=checked]:border-navy data-[state=indeterminate]:bg-navy data-[state=indeterminate]:border-navy"
+   518→                  disabled={filtered.length === 0}
+   519→                />
+   520→              </TableHead>
+   521→              <TableHead className="pl-0">Nama</TableHead>
+   522→              <TableHead>Telepon</TableHead>
+   523→              <TableHead>Layanan</TableHead>
+   524→              <TableHead>Status</TableHead>
+   525→              <TableHead>Diterima</TableHead>
+   526→              <TableHead className="pr-4 text-right">Aksi</TableHead>
+   527→            </TableRow>
+   528→          </TableHeader>
+   529→          <TableBody>
+   530→            {filtered.length === 0 ? (
+   531→              <TableRow>
+   532→                <TableCell colSpan={7} className="py-12 text-center">
+   533→                  <div className="flex flex-col items-center gap-2 text-ink-soft">
+   534→                    <Inbox className="size-6 opacity-40" />
+   535→                    <p className="text-sm">Tidak ada lead yang cocok.</p>
+   536→                  </div>
+   537→                </TableCell>
+   538→              </TableRow>
+   539→            ) : (
+   540→              filtered.map((lead) => {
+   541→                const isSelected = selectedIds.has(lead.id);
+   542→                return (
+   543→                  <TableRow
+   544→                    key={lead.id}
+   545→                    className={cn(
+   546→                      "cursor-pointer transition-colors",
+   547→                      isSelected && "bg-gold-50 ring-1 ring-inset ring-gold-200"
+   548→                    )}
+   549→                    onClick={() => setSelectedId(lead.id)}
+   550→                    data-selected={isSelected ? "true" : undefined}
+   551→                  >
+   552→                    <TableCell
+   553→                      className="pl-4 pr-0"
+   554→                      onClick={(e) => e.stopPropagation()}
+   555→                    >
+   556→                      <Checkbox
+   557→                        aria-label={`Pilih lead ${lead.name}`}
+   558→                        checked={isSelected}
+   559→                        onCheckedChange={() => toggleSelect(lead.id)}
+   560→                        className="data-[state=checked]:bg-navy data-[state=checked]:border-navy"
+   561→                      />
+   562→                    </TableCell>
+   563→                    <TableCell className="pl-0">
+   564→                      <div className="font-medium text-ink">{lead.name}</div>
+   565→                      {lead.businessName && (
+   566→                        <div className="text-xs text-ink-soft">
+   567→                          {lead.businessName}
+   568→                        </div>
+   569→                      )}
+   570→                    </TableCell>
+   571→                    <TableCell className="text-sm text-ink-soft tabular-nums">
+   572→                      {lead.phone}
+   573→                    </TableCell>
+   574→                    <TableCell className="text-sm text-ink-soft">
+   575→                      {lead.serviceName ?? "—"}
+   576→                    </TableCell>
+   577→                    <TableCell>
+   578→                      <Badge
+   579→                        variant="outline"
+   580→                        className={leadStatusBadgeClass(lead.status)}
+   581→                      >
+   582→                        <span
+   583→                          className={cn(
+   584→                            "size-1.5 rounded-full mr-1",
+   585→                            LEAD_STATUS[(lead.status as LeadStatusKey) ?? "NEW"]?.dot ??
+   586→                              "bg-ink-soft"
+   587→                          )}
+   588→                        />
+   589→                        {LEAD_STATUS[(lead.status as LeadStatusKey) ?? "NEW"]?.label ??
+   590→                          lead.status}
+   591→                      </Badge>
+   592→                    </TableCell>
+   593→                    <TableCell className="text-xs text-ink-soft whitespace-nowrap">
+   594→                      {relativeDate(lead.createdAt)}
+   595→                    </TableCell>
+   596→                    <TableCell className="pr-4 text-right">
+   597→                      <Button
+   598→                        variant="ghost"
+   599→                        size="sm"
+   600→                        className="h-8"
+   601→                        onClick={(e) => {
+   602→                          e.stopPropagation();
+   603→                          setSelectedId(lead.id);
+   604→                        }}
+   605→                      >
+   606→                        <Eye className="size-4" />
+   607→                        <span className="hidden sm:inline">Detail</span>
+   608→                      </Button>
+   609→                    </TableCell>
+   610→                  </TableRow>
+   611→                );
+   612→              })
+   613→            )}
+   614→          </TableBody>
+   615→        </Table>
+   616→      </div>
+   617→
+   618→      {/* Detail Sheet */}
+   619→      <LeadDetailSheet
+   620→        lead={selected}
+   621→        open={!!selected}
+   622→        onOpenChange={(o) => !o && setSelectedId(null)}
+   623→        services={services}
+   624→      />
+   625→
+   626→      {/* Floating bulk-action bar */}
+   627→      {selectedIds.size > 0 && (
+   628→        <LeadsBulkBar
+   629→          selectedIds={selectedIds}
+   630→          onClear={clearSelection}
+   631→          onRefresh={handleRefresh}
+   632→        />
+   633→      )}
+   634→    </div>
+   635→  );
+   636→}
+   637→
+   638→function LeadDetailSheet({
+   639→  lead,
+   640→  open,
+   641→  onOpenChange,
+   642→  services,
+   643→}: {
+   644→  lead: LeadRow | null;
+   645→  open: boolean;
+   646→  onOpenChange: (open: boolean) => void;
+   647→  services: ServiceOption[];
+   648→}) {
+   649→  const [status, setStatus] = React.useState<string>(lead?.status ?? "NEW");
+   650→  const [note, setNote] = React.useState<string>(lead?.note ?? "");
+   651→  const [saving, setSaving] = React.useState(false);
+   652→  const [deleting, setDeleting] = React.useState(false);
+   653→
+   654→  // Sync local state when lead changes
+   655→  React.useEffect(() => {
+   656→    if (lead) {
+   657→      setStatus(lead.status);
+   658→      setNote(lead.note);
+   659→    }
+   660→  }, [lead?.id]);
+   661→
+   662→  if (!lead) {
+   663→    return (
+   664→      <Sheet open={open} onOpenChange={onOpenChange}>
+   665→        <SheetContent side="right" className="w-full sm:max-w-md" />
+   666→      </Sheet>
+   667→    );
+   668→  }
+   669→
+   670→  async function handleSave() {
+   671→    if (!lead) return;
+   672→    setSaving(true);
+   673→    try {
+   674→      const res = await fetch(`/api/admin/leads/${lead.id}`, {
+   675→        method: "PATCH",
+   676→        headers: { "Content-Type": "application/json" },
+   677→        body: JSON.stringify({ status, note }),
+   678→      });
+   679→      const data = await res.json().catch(() => ({}));
+   680→      if (!res.ok || !data.ok) {
+   681→        toast.error(data.error ?? "Gagal menyimpan perubahan.");
+   682→        return;
+   683→      }
+   684→      toast.success("Lead diperbarui.");
+   685→      // Refresh to reflect updates on the table
+   686→      window.location.reload();
+   687→    } catch {
+   688→      toast.error("Kesalahan jaringan saat menyimpan.");
+   689→    } finally {
+   690→      setSaving(false);
+   691→    }
+   692→  }
+   693→
+   694→  async function handleDelete() {
+   695→    if (!lead) return;
+   696→    if (!confirm("Hapus lead ini secara permanen? Tindakan ini tidak bisa dibatalkan.")) {
+   697→      return;
+   698→    }
+   699→    setDeleting(true);
+   700→    try {
+   701→      const res = await fetch(`/api/admin/leads/${lead.id}`, {
+   702→        method: "DELETE",
+   703→      });
+   704→      const data = await res.json().catch(() => ({}));
+   705→      if (!res.ok || !data.ok) {
+   706→        toast.error(data.error ?? "Gagal menghapus lead.");
+   707→        return;
+   708→      }
+   709→      toast.success("Lead dihapus.");
+   710→      window.location.reload();
+   711→    } catch {
+   712→      toast.error("Kesalahan jaringan saat menghapus.");
+   713→    } finally {
+   714→      setDeleting(false);
+   715→    }
+   716→  }
+   717→
+   718→  return (
+   719→    <Sheet open={open} onOpenChange={onOpenChange}>
+   720→      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+   721→        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+   722→          <SheetTitle className="text-lg text-ink">{lead.name}</SheetTitle>
+   723→          <SheetDescription className="sr-only">
+   724→            Detail lead dan pembaruan status.
+   725→          </SheetDescription>
+   726→          <div className="text-xs text-ink-soft flex items-center gap-1.5">
+   727→            <Clock className="size-3" />
+   728→            {formatDate(lead.createdAt)}
+   729→          </div>
+   730→        </SheetHeader>
+   731→
+   732→        {/* Body */}
+   733→        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+   734→          {/* Contact info */}
+   735→          <div className="space-y-2">
+   736→            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
+   737→              Kontak
+   738→            </h3>
+   739→            <div className="grid gap-1.5 text-sm">
+   740→              <a
+   741→                href={`tel:${lead.phone}`}
+   742→                className="flex items-center gap-2 text-ink hover:text-navy"
+   743→              >
+   744→                <Phone className="size-4 text-ink-soft" />
+   745→                {lead.phone}
+   746→              </a>
+   747→              {lead.email && (
+   748→                <a
+   749→                  href={`mailto:${lead.email}`}
+   750→                  className="flex items-center gap-2 text-ink hover:text-navy truncate"
+   751→                >
+   752→                  <Mail className="size-4 text-ink-soft shrink-0" />
+   753→                  <span className="truncate">{lead.email}</span>
+   754→                </a>
+   755→              )}
+   756→              {lead.businessName && (
+   757→                <div className="flex items-center gap-2 text-ink">
+   758→                  <Building2 className="size-4 text-ink-soft" />
+   759→                  {lead.businessName}
+   760→                </div>
+   761→              )}
+   762→            </div>
+   763→            {/* WhatsApp click-to-chat with template selector */}
+   764→            <WhatsAppTemplateButton
+   765→              lead={{
+   766→                name: lead.name,
+   767→                phone: lead.phone,
+   768→                serviceName: lead.serviceName,
+   769→                businessName: lead.businessName,
+   770→                message: lead.message,
+   771→              }}
+   772→            />
+   773→          </div>
+   774→
+   775→          {/* Service */}
+   776→          {lead.serviceName && (
+   777→            <div className="space-y-1.5">
+   778→              <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
+   779→                Layanan Diminati
+   780→              </h3>
+   781→              <Badge
+   782→                variant="outline"
+   783→                className="bg-navy-50 text-navy border-navy/15"
+   784→              >
+   785→                {lead.serviceName}
+   786→              </Badge>
+   787→            </div>
+   788→          )}
+   789→
+   790→          {/* Message */}
+   791→          <div className="space-y-1.5">
+   792→            <h3 className="text-xs font-semibold text-ink-soft uppercase tracking-wider flex items-center gap-1.5">
+   793→              <MessageSquare className="size-3.5" />
+   794→              Pesan
+   795→            </h3>
+   796→            <div className="rounded-lg bg-surface-alt p-3 text-sm text-ink whitespace-pre-wrap leading-relaxed">
+   797→              {lead.message}
+   798→            </div>
+   799→          </div>
+   800→
+   801→          {/* Status update */}
+   802→          <div className="space-y-1.5">
+   803→            <Label className="text-xs font-semibold text-ink-soft uppercase tracking-wider">
+   804→              Status
+   805→            </Label>
+   806→            <Select value={status} onValueChange={setStatus}>
+   807→              <SelectTrigger className="w-full h-10">
+   808→                <SelectValue />
+   809→              </SelectTrigger>
+   810→              <SelectContent>
+   811→                {LEAD_STATUS_ORDER.map((k) => (
+   812→                  <SelectItem key={k} value={k}>
+   813→                    <span className="flex items-center gap-2">
+   814→                      <span
+   815→                        className={cn(
+   816→                          "size-2 rounded-full",
+   817→                          LEAD_STATUS[k].dot
+   818→                        )}
+   819→                      />
+   820→                      {LEAD_STATUS[k].label}
+   821→                    </span>
+   822→                  </SelectItem>
+   823→                ))}
+   824→              </SelectContent>
+   825→            </Select>
+   826→          </div>
+   827→
+   828→          {/* Internal note */}
+   829→          <div className="space-y-1.5">
+   830→            <Label
+   831→              htmlFor="note"
+   832→              className="text-xs font-semibold text-ink-soft uppercase tracking-wider"
+   833→            >
+   834→              Catatan Internal
+   835→            </Label>
+   836→            <Textarea
+   837→              id="note"
+   838→              value={note}
+   839→              onChange={(e) => setNote(e.target.value)}
+   840→              placeholder="Tambahkan catatan: kapan dihubungi, follow-up, dll."
+   841→              className="min-h-24 resize-y"
+   842→            />
+   843→          </div>
+   844→
+   845→          {/* Status history timeline */}
+   846→          <LeadStatusTimeline histories={lead.statusHistories ?? []} />
+   847→        </div>
+   848→
+   849→        {/* Footer */}
+   850→        <div className="border-t border-border px-5 py-3 flex items-center gap-2">
+   851→          <Button
+   852→            variant="outline"
+   853→            size="sm"
+   854→            onClick={handleDelete}
+   855→            disabled={deleting || saving}
+   856→            className="text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/20"
+   857→          >
+   858→            {deleting ? (
+   859→              <Loader2 className="size-4 animate-spin" />
+   860→            ) : (
+   861→              <Trash2 className="size-4" />
+   862→            )}
+   863→            Hapus
+   864→          </Button>
+   865→          <Button
+   866→            size="sm"
+   867→            onClick={handleSave}
+   868→            disabled={saving || deleting}
+   869→            className="ml-auto bg-navy hover:bg-navy-700 text-white"
+   870→          >
+   871→            {saving ? (
+   872→              <Loader2 className="size-4 animate-spin" />
+   873→            ) : (
+   874→              <Save className="size-4" />
+   875→            )}
+   876→            Simpan
+   877→          </Button>
+   878→        </div>
+   879→      </SheetContent>
+   880→    </Sheet>
+   881→  );
+   882→}
+   883→

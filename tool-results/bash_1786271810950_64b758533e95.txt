@@ -1,0 +1,500 @@
+# PINTU LEGAL — Project Worklog
+
+Project: Premium legal business website for **PT. Pintu Menuju Sukses** (brand: **PINTU LEGAL**)
+Stack: Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · shadcn/ui · Prisma (SQLite in sandbox) · Framer Motion
+
+## Project Status Overview
+- Phase: **PHASE 1 — Premium Legal Business Website**
+- Status: 🟡 In Progress
+- Started: 2026-01-01
+
+## Master Prompt Summary
+Build a premium, modern, responsive legal-service company website (not a traditional notary site).
+Brand: PINTU LEGAL (PT. Pintu Menuju Sukses). Logo concept = navy double-door with gold knobs.
+Colors: Deep Navy #0F2747 (primary), Gold #C89B3C (accent), White #FFFFFF / #F7F8FA backgrounds.
+Font: Plus Jakarta Sans. Tone: professional, modern, friendly, no fake stats/testimonials.
+
+Pages required: `/`, `/layanan`, `/layanan/[slug]`, `/tentang`, `/harga`, `/faq`, `/blog`, `/blog/[slug]`, `/kontak`, `/privacy-policy`, `/terms`, `/admin`, `/admin/login`.
+DB tables: services, leads, blog_posts, blog_categories, faqs, testimonials, site_settings, users.
+Floating WhatsApp button, contact form with validation + honeypot + rate limiting, SEO (sitemap/robots/OG/structured data).
+
+---
+Task ID: 1
+Agent: main (orchestrator)
+Task: Set up foundation — design system, logo SVG, layout, brand config, env.example, worklog.
+
+Work Log:
+- Read master prompt (1684 lines) and analyzed 2 logo images via VLM.
+- Logo confirmed: navy arched double-door with two gold knobs; wordmark "PINTU" (navy) over "LEGAL" (gold).
+- Will create /public/logo.svg, /public/favicon.svg, brand tokens in globals.css, Plus Jakarta Sans in layout.
+- Will set up env.example and Prisma schema baseline.
+
+Stage Summary:
+- Foundation files produced: globals.css (navy/gold tokens), src/app/layout.tsx (Plus Jakarta Sans), public/logo.svg, public/favicon.svg, .env.example, src/lib/site.ts (brand config).
+- Ready to delegate section builds to subagents.
+
+---
+Task ID: 4-A
+Agent: full-stack-developer
+Task: Build 8 homepage sections (Hero, TrustBar, Services, Why, How, PricingCTA, FAQ, FinalCTA) + compose page.tsx
+
+Work Log:
+- Read worklog.md, globals.css (brand tokens), site.ts, section-primitives.tsx, service-icon.tsx, queries.ts, seo.ts, site-shell.tsx, schema.prisma, and seed.ts to confirm data shape and available utilities.
+- Created `src/components/sections/hero.tsx` (server component): left column with eyebrow, H1 with gold gradient "Legal.", description from siteConfig, two CTAs, avatar cluster + WhatsApp trust line; right column with floating white document cards (Akta/SK/NIB) on bg-grid panel, "Preview" navy badge, "Proses Berjalan · 72%" status pill, plus white→#F7F8FA gradient + gold radial glow background. Uses Reveal islands for staggered entrance.
+- Created `src/components/sections/trust-bar.tsx` (server component): 4 value pills (Profesional/Transparan/Terarah/Responsif) with Lucide icons (ShieldCheck/Eye/Compass/Zap), centered heading + subtext, on bg-surface-alt strip.
+- Created `src/components/sections/services.tsx` (async server component, calls `await getServices()`): bento grid lg:grid-cols-3 with featured first card spanning 2 cols (navy gradient bg + gold "Unggulan" badge + bg-grid-navy overlay); each card links to /layanan/[slug], has ServiceIcon, name, shortDescription, duration badge, "Pelajari →" gold link, hover lift.
+- Created `src/components/sections/why-pintu-legal.tsx` (server component): 2×3 grid of 6 numbered value cards (01–06) with large gold-200 outline numbers (CSS -webkit-text-stroke), navy bold names, ink-soft descriptions, gold underline bar that grows on hover.
+- Created `src/components/sections/how-it-works.tsx` (server component): 4-step process. Mobile = vertical timeline with left rail; Desktop (lg) = horizontal timeline with connecting gradient line; numbered navy circles with gold-200 ring.
+- Created `src/components/sections/pricing-cta.tsx` (server component): centered white card with "Konsultasi Awal" badge, headline, description, two CTAs (navy primary /kontak, gold-outline WhatsApp secondary), gold corner glow. No fake prices.
+- Created `src/components/sections/faq-section.tsx` (async server component, calls `await getFaqs()`): shadcn Accordion (single/collapsible, default-open first), up to 6 FAQs, navy triggers, ink-soft answers, "Lihat semua FAQ" → /faq, wrapped in max-w-3xl mx-auto.
+- Created `src/components/sections/final-cta.tsx` (server component): full-width .bg-navy-mesh + .bg-grid-navy overlay, gold eyebrow "MULAI SEKARANG", white H2, white/70 subheadline, two CTAs (gold primary "Konsultasi Gratis" /kontak, white-outline WhatsApp secondary), decorative CSS-only gold arcs (rounded borders) on sides.
+- Updated `src/app/page.tsx` as async server component: wraps all sections in <SiteShell>, fetches getFaqs() at top, injects organizationJsonLd() + faqPageJsonLd(faqs) as <script type="application/ld+json">, sets page-specific metadata (title + canonical).
+- Ran `bun run lint` — 0 errors. Only remaining warning is in another agent's consultation-form.tsx (react-hook-form watch API), not from this task's files.
+- Verified dev server: GET / returns 200 OK, no compile/runtime errors.
+- Appended work record to /home/z/my-project/agent-ctx/4-A-full-stack-developer.md.
+
+Stage Summary:
+- Files produced (9): src/components/sections/hero.tsx, trust-bar.tsx, services.tsx, why-pintu-legal.tsx, how-it-works.tsx, pricing-cta.tsx, faq-section.tsx, final-cta.tsx, src/app/page.tsx.
+- All 8 sections are server components (async for services.tsx + faq-section.tsx); animations handled via existing <Reveal> client primitive — no "use client" needed in section files.
+- Homepage composes: Hero → TrustBar → Services → WhyPintuLegal → HowItWorks → PricingCta → FaqSection → FinalCta inside <SiteShell>.
+- SEO: Organization + FAQPage JSON-LD injected; canonical "/"; page title set.
+- Design respects brand (navy #0F2747, gold #C89B3C, Plus Jakarta Sans), uses existing tokens (.eyebrow, .shadow-soft, .shadow-soft-lg, .shadow-gold, .bg-navy-mesh, .bg-grid, .bg-grid-navy, .text-gradient-gold, .animate-float-soft(-delayed)), mobile-first responsive, semantic HTML, accessible labels.
+- No fake stats, testimonials, or client logos anywhere (per master prompt).
+- Lint clean (0 errors); dev server renders homepage successfully.
+
+---
+Task ID: 6-A
+Agent: full-stack-developer
+Task: Build /tentang, /harga, /faq, /kontak (+ consultation form client component), /privacy-policy, /terms pages
+
+Work Log:
+- Read worklog.md + all relevant existing components (site-shell, section-primitives, navbar/footer, ui primitives, leads API route, prisma schema/seed, site/seo libs).
+- Created 6 page directories under src/app/ + src/components/sections/ + agent-ctx/.
+- Built /tentang (server) — hero + 4 sections: Kisah Pintu Legal (brand story, exact text preserved), Nilai-Nilai Kami (4 value cards: Profesional/Transparan/Terarah/Responsif with ShieldCheck/Eye/Compass/Zap), Pendekatan Kami (3-step horizontal mini-timeline with desktop connector line: Dengarkan → Tentukan Solusi → Dampingi Hingga Selesai), CTA band → /kontak.
+- Built /harga (server) — hero "no fake prices" message, Cara Kerja Penawaran 3 cards (Konsultasi Awal Gratis / Penilaian Kebutuhan / Penawaran Sesuai Kebutuhan), Layanan Populer compact list (fetches getServices, slices 6, shows name + durationLabel + shortDescription + Detail/Konsultasi buttons, NO prices), Big CTA card with .bg-navy-mesh offering Form + WhatsApp.
+- Built /faq (async server) — fetches getFaqs(), groups by category preserving first-seen order, renders one shadcn Accordion per group with category heading + count badge. Sidebar (lg sticky): quick-jump category anchors (slugified) + "Masih punya pertanyaan?" navy-mesh card with WhatsApp + Form Konsultasi buttons. Injected faqPageJsonLd structured data via <script type="application/ld+json">.
+- Built consultation-form.tsx client ("use client") — react-hook-form + zodResolver. Fields: name, phone, email (optional), serviceId (shadcn Select populated via props), businessName (optional), message, hidden honeypot "website". Validation: name min 2, phone min 7 numeric regex, email optional refine, message min 5. Submit: POST JSON to /api/leads → loading (Loader2 + "Mengirim…") → success (CheckCircle2 + reset + sonner toast) → error (inline AlertCircle banner + sonner toast, distinguishing 422/400/429/500/network). Switched watch()→useWatch() to satisfy React Compiler lint. Field wrapper wires Label + aria-invalid + aria-describedby + role="alert".
+- Built /kontak (server shell) — fetches services, passes {id,name}[] to ConsultationForm. Two-column lg:grid-cols-12: LEFT navy gradient card (.bg-navy-mesh) with WhatsApp/email/address/business hours/social links/confidentiality note; RIGHT form card.
+- Built /privacy-policy (server) — max-w-3xl prose-styled page. Sections: Pendahuluan, Informasi yang Kami Kumpulkan, Penggunaan Informasi, Pembagian Informasi, Keamanan Data, Hak Anda, Perubahan Kebijakan, Kontak. Includes "template" notice banner + "Terakhir diperbarui" date + TOC nav + scroll-mt-24 anchors + "Kembali ke beranda" CTA.
+- Built /terms (server) — similar prose layout. Sections: Penerimaan Ketentuan, Layanan Kami, Kewajiban Pengguna, Pembayaran, Hak Kekayaan Intelektual, Batasan Tanggung Jawab, Perubahan Layanan, Hukum yang Berlaku, Kontak.
+- All pages wrapped in <SiteShell>. Mobile-first responsive verified mentally at 360/768/1024. Accessibility: semantic HTML, aria-label/role/aria-invalid/aria-describedby, focus-visible rings via shadcn.
+- Lint: initial run flagged 1 warning (react-hook-form watch() incompatible with React Compiler) → fixed via useWatch() → re-ran lint → 0 errors 0 warnings.
+- Smoke-tested all 6 routes via curl → all HTTP 200. Tested POST /api/leads with valid payload → {ok:true, id:...}; with invalid payload → {error:"Validasi gagal", issues:{...}} as expected.
+
+Stage Summary:
+- Files produced (7):
+  - src/app/tentang/page.tsx                       (server, ~250 lines)
+  - src/app/harga/page.tsx                         (server, ~260 lines)
+  - src/app/faq/page.tsx                           (async server, ~210 lines)
+  - src/app/kontak/page.tsx                        (server shell, ~230 lines)
+  - src/app/privacy-policy/page.tsx                (server, ~210 lines)
+  - src/app/terms/page.tsx                         (server, ~220 lines)
+  - src/components/sections/consultation-form.tsx  (client, ~310 lines)
+- Files modified: none (only new files added).
+- Decisions: useWatch() over watch() to satisfy React Compiler; FAQ grouped client-side after single fetch; pricing page shows NO prices per master prompt; honeypot positioned absolutely (not display:none) so bots still fill it; privacy/terms use manual prose styling (no @tailwindcss/typography dep) with TOC + scroll-mt-24 anchors.
+- Lint: clean (0 errors, 0 warnings). All 6 routes compile & serve HTTP 200 in dev server.
+
+---
+Task ID: 5-A
+Agent: full-stack-developer
+Task: Build /layanan, /layanan/[slug], /blog, /blog/[slug] pages
+
+Work Log:
+- Read worklog.md and reviewed existing primitives (SiteShell, Reveal, SectionHeading, ServiceIcon, queries, seo, site config) and the existing homepage Services section + FAQ page to mirror styling conventions (navy/gold tokens, .bg-grid, .bg-navy-mesh, .shadow-soft-lg, .eyebrow, Reveal stagger).
+- Created shared sub-components in src/components/site/ to keep each page file under ~350 lines:
+  - breadcrumb-nav.tsx (server-safe BreadcrumbNav built on shadcn Breadcrumb)
+  - service-card.tsx (flat service card mirroring homepage styling but without featured treatment)
+  - blog-card.tsx (magazine card with deterministic gradient placeholder + date-fns id locale)
+  - markdown.tsx (tiny inline markdown renderer — supports #/##/###, -, 1., **bold**, paragraphs; no "use client", server-safe)
+  - service-sidebar.tsx (sticky sidebar + deriveAudience slug→audience bullets)
+  - service-cta-band.tsx (reusable navy-mesh CTA band)
+- Built /layanan listing page (server component):
+  - Hero with eyebrow "LAYANAN KAMI", H1 "Temukan Pintu yang Tepat untuk Bisnis Anda.", description, breadcrumb Home/Layanan, bg-surface-alt + .bg-grid.
+  - Category filter chips (Badan Usaha / Perizinan / HKI / Pendukung / Semua) using URL search param ?cat=slug. Filter is fully functional — fetches getServices() + db.service.findMany for category mapping, filters client-grid by selected category. Active chip styled with navy bg + gold dot. Empty state for category with no services.
+  - Secondary "Kategori Layanan" category index grid below main grid (always visible, supports discovery).
+  - Bottom navy-mesh CTA band ("Tidak menemukan layanan yang sesuai?") with /kontak + WhatsApp buttons.
+  - Metadata: title "Layanan Legalitas Bisnis — Pintu Legal", canonical /layanan.
+- Built /layanan/[slug] detail page (server component):
+  - generateStaticParams() pre-renders all service slugs at build time.
+  - generateMetadata() per-service: title, description, canonical, OG, Twitter card.
+  - Hero: breadcrumb (Home/Layanan/Name), category eyebrow, H1 service name, shortDescription, two CTAs (Konsultasi Gratis + WhatsApp). On mobile (lg:hidden), ServiceSidebar appears below hero CTAs.
+  - Body grid (lg:grid-cols-12): main col-span-8 + sticky desktop sidebar col-span-4 (hidden lg:block, sticky top-24).
+  - Main sections in order: Tentang Layanan (description with whitespace-pre-line) → Apa yang Termasuk (highlights checkmark grid 2-col) → Proses (numbered vertical timeline with navy circle badges) → Siapa yang Membutuhkan (deriveAudience bullets, slug-keyed with generic fallback) → Pertanyaan Umum (Accordion if faqs non-empty, else dashed note + /faq link).
+  - Sticky sidebar: service name, durationLabel gold badge, priceLabel (or "Konsultasi untuk penawaran" fallback), CTAs (Konsultasi Gratis + Chat via WhatsApp), Dokumen yang Diperlukan list (from requirements array).
+  - Final navy-mesh CTA band with title "Butuh informasi lebih lanjut tentang [service.name]?" → /kontak + WhatsApp.
+  - JSON-LD scripts: serviceJsonLd + breadcrumbJsonLd + (conditionally) faqPageJsonLd.
+  - notFound() called if service missing/inactive.
+- Built /blog listing page (server component):
+  - Hero with eyebrow "BLOG", H1 "Insight & Panduan Legalitas Bisnis", description per task brief, breadcrumb Home/Blog.
+  - Fetches getPublishedPosts(). Featured post = newest, rendered as large 2-col (gradient placeholder + body) card with "Unggulan" badge. Remaining posts in lg:grid-cols-3 magazine grid using BlogCard.
+  - Empty state if no posts: "Belum ada artikel. Silakan kembali lagi nanti."
+  - Bottom CTA: "Butuh konsultasi untuk kebutuhan legalitas Anda?" → /kontak.
+  - Metadata: title "Blog Legalitas Bisnis — Pintu Legal", canonical /blog.
+- Built /blog/[slug] detail page (server component):
+  - generateStaticParams() + generateMetadata() with article OG metadata (type: article, publishedTime, authors).
+  - Hero: breadcrumb, category badge (links to /blog), H1 title, excerpt, author + formatted date (date-fns id locale, "d MMMM yyyy") + reading time estimate.
+  - Featured image gradient placeholder, then Markdown-rendered content (handles #/##/###, bullet lists, ordered lists, **bold**, paragraphs).
+  - Article footer with author avatar initials + "← Kembali ke Blog" link.
+  - Navy-mesh CTA card "Butuh konsultasi?" → /kontak.
+  - Sidebar (lg:sticky top-24): "Artikel lainnya" with 3 latest other posts via BlogCard.
+  - JSON-LD: articleJsonLd + breadcrumbJsonLd.
+  - notFound() if post missing/unpublished.
+- Verified all pages compile and return correct HTTP codes via curl:
+  - /layanan, /layanan/pendirian-pt, /layanan/layanan-legalitas-lainnya, /blog, /blog/pendirian-pt-vs-cv, /blog/apa-itu-nib → 200
+  - /layanan?cat=pendirian-badan-usaha → 200 (filter returns 3 services: pendirian-pt, pendirian-cv, pendirian-yayasan)
+  - /layanan/nonexistent, /blog/nonexistent → 404 (notFound works)
+- Confirmed JSON-LD structure: service detail renders Service + BreadcrumbList scripts (no FAQPage since seeded services don't have faqsJson set); blog detail renders Article + BreadcrumbList scripts.
+- Ran `bun run lint` — clean, no errors.
+
+Stage Summary:
+Files produced (new):
+- src/components/site/breadcrumb-nav.tsx (53 lines)
+- src/components/site/service-card.tsx (52 lines)
+- src/components/site/blog-card.tsx (100 lines)
+- src/components/site/markdown.tsx (202 lines, server-safe inline markdown renderer)
+- src/components/site/service-sidebar.tsx (145 lines, sidebar + deriveAudience)
+- src/components/site/service-cta-band.tsx (88 lines, reusable navy-mesh CTA)
+- src/app/layanan/page.tsx (262 lines)
+- src/app/layanan/[slug]/page.tsx (319 lines)
+- src/app/blog/page.tsx (187 lines)
+- src/app/blog/[slug]/page.tsx (288 lines)
+
+Decisions:
+- Used URL search param ?cat=slug for category filtering (server-side filter via db query) instead of client-side JS — keeps the page a true server component.
+- Reused the homepage service card visual language (rounded-2xl border, ServiceIcon, duration badge, "Pelajari →") but extracted into a flat ServiceCard component so the listing doesn't apply the featured-hero treatment.
+- Inline markdown renderer instead of pulling in react-markdown (already a dep but task brief said "don't install a markdown lib — write a small inline renderer"). Handles all seeded post content patterns (#/##, -, 1., **bold**).
+- deriveAudience is a static slug→bullets map with a generic professional fallback; bullets are intentionally broad and non-fabricated (no fake customer counts, no fake stats).
+- Sticky sidebar pattern: one ServiceSidebar in hero (lg:hidden) for mobile + one in body (hidden lg:block, sticky top-24) for desktop — avoids duplicate sidebars on desktop.
+- All four pages wrapped in <SiteShell>; all use <Reveal> for staggered animation; all use existing shadcn/ui components (Button, Accordion, Breadcrumb) — no new UI deps added.
+- Lint passes clean. All routes verified 200/404 as expected.
+
+---
+Task ID: 9-A
+Agent: full-stack-developer
+Task: Build /admin (login, dashboard, leads, services, blog, FAQ, testimonials, settings) with secure cookie auth
+
+Work Log:
+- Read worklog.md + schema.prisma + globals.css + existing components (Table, Card, Sheet, Dialog, Select, Switch, sonner). Confirmed brand tokens (navy/gold/ink/ink-soft/surface-alt) and existing utilities (db, queries, service-icon).
+- Installed bcryptjs + @types/bcryptjs (bun add bcryptjs + bun add -d @types/bcryptjs).
+- Designed auth as a split library: `src/lib/auth/cookie.ts` (edge-safe Web Crypto HMAC sign/verify, no `server-only`), `src/lib/auth/admin.ts` (server-only: bcrypt + cookies() + requireAdmin + authenticateAdmin with DB & env fallback). Middleware (`src/middleware.ts`) imports only `cookie.ts` so it runs cleanly on edge and verifies only the HMAC signature.
+- Session cookie `pintu_admin`: HttpOnly, SameSite=Lax, 24h expiry, secure in prod. Token = base64url(payload).base64url(hmac_sha256(payload)).
+- Layout strategy: route group `(dashboard)` for all chrome'd admin pages so the login page at `src/app/admin/login/page.tsx` does NOT inherit the admin chrome (login stays clean & full-screen). `(dashboard)/layout.tsx` calls `requireAdmin()` (defense-in-depth alongside middleware).
+- Built `scripts/create-admin.ts <email> <password>` that bcrypt-hashes the password and upserts a User row with role=ADMIN. No default admin auto-created.
+- Built `/admin/login` server page + `LoginForm` client (centered card on `bg-navy-mesh`, gold glow, brand header, show/hide pw toggle, error toast, redirect to `?from=` path on success).
+- Built `/api/admin/login` (POST, validates with zod, calls `authenticateAdmin`, sets cookie) + `/api/admin/logout` (POST, clears cookie).
+- Built `AdminShell` client component: navy sidebar (lg+) with nav links (Dashboard/Leads/Layanan/Blog/FAQ/Testimoni/Pengaturan), gold active state with `usePathname()`, sticky; top bar shows current section + admin email + "Lihat situs" external link + logout button. Mobile: Sheet drawer (left side), closes on route change. Bootstrap-style logout button calls `/api/admin/logout` and hard-navigates to `/admin/login`.
+- Built dashboard (`/admin`): welcome banner (`bg-navy-mesh`), 4 stat cards (Total Leads + new-this-week count, Layanan Aktif, Artikel Terbit, Testimoni Aktif), 5 latest leads table (with status badge + relative time via date-fns id locale), quick links card.
+- Built `/admin/leads` + `LeadsTable` client: status filter chips with counts (Semua/Baru/Dihubungi/Qualified/Terkonversi/Hilang), search box (name/phone/email/business/service), CSV export, table with row-click → right-side Sheet detail panel (contact info, message, status Select, note Textarea, Save/Delete with loading + toast). Status badges color-coded (gold-100/navy-100/gold-200/green-100/red-100) via shared `lead-status.ts`. PATCH/DELETE at `/api/admin/leads/[id]`.
+- Built `/admin/services` + `ServicesTable` client: table with inline active Switch + featured Star button, edit dialog (name/slug auto-derived/shortDescription/description/icon select from serviceIconNames()/durationLabel/priceLabel/category/sortOrder/isActive/isFeatured), create dialog with same form, PATCH/POST/DELETE.
+- Built `/admin/blog` + `BlogTable` client: table with status badge (Terbit/Draft), Eye/EyeOff toggle to publish/unpublish, External-Link to public post when published, edit dialog (title/slug/excerpt/markdown content/author/category/status/publishedAt date), PATCH/POST/DELETE.
+- Built `/admin/faqs` + `FaqsTable` client: table with active Switch, edit dialog (question/answer/category with datalist autocomplete from existing categories/sortOrder/isActive), PATCH/POST/DELETE.
+- Built `/admin/testimonials` + `TestimonialsTable` client: table with star rating display + active Switch, edit dialog (name/company/role/quote/clickable star rating 1-5/sortOrder/isActive), PATCH/POST/DELETE.
+- Built `/admin/settings` + `SettingsForm` client: lists all key/value pairs as editable inputs, "Tambah Pengaturan Baru" card to add new key/value (with key→snake_case normalization), dirty-state aware Save button, PATCH bulk upsert at `/api/admin/settings` (also GET).
+- All admin APIs verify `getAdminSession()` and return 401 if null. No `passwordHash` ever selected from User queries.
+- All admin pages set `export const dynamic = "force-dynamic"` so leads/status changes are always fresh.
+- All UI text in Bahasa Indonesia.
+- Smoke tested end-to-end with curl:
+  - GET /admin/login → 200; GET /admin (no cookie) → 307 redirect to /admin/login?from=%2Fadmin; GET /admin/leads|services|blog|faqs|testimonials|settings (no cookie) → 307.
+  - POST /api/admin/login invalid → 401; valid → 200 + sets pintu_admin cookie.
+  - With cookie: all 7 admin pages return 200 with expected content (Selamat datang, Total Leads, Tambah FAQ, Tulis Artikel, etc.).
+  - PATCH /api/admin/leads/[id] with cookie → 200; without cookie → 401.
+  - POST /api/leads (public lead submit) still works.
+  - Grep on all admin HTML: 0 occurrences of `passwordHash`.
+- Ran `bun run lint` → 0 errors, 0 warnings.
+
+Stage Summary:
+- 37 new files produced:
+  - Auth/infra (5): src/lib/auth/cookie.ts, src/lib/auth/admin.ts, src/middleware.ts, scripts/create-admin.ts, .env.example (+ .env updated)
+  - Login (4): src/app/admin/login/page.tsx, src/components/admin/login-form.tsx, src/app/api/admin/login/route.ts, src/app/api/admin/logout/route.ts
+  - Chrome (2): src/app/admin/(dashboard)/layout.tsx, src/components/admin/admin-shell.tsx
+  - Dashboard (2): src/app/admin/(dashboard)/page.tsx, src/components/admin/lead-status.ts
+  - Leads (3): src/app/admin/(dashboard)/leads/page.tsx, src/components/admin/leads-table.tsx, src/app/api/admin/leads/[id]/route.ts
+  - Services (4): src/app/admin/(dashboard)/services/page.tsx, src/components/admin/services-table.tsx, src/app/api/admin/services/route.ts, src/app/api/admin/services/[id]/route.ts
+  - Blog (4): src/app/admin/(dashboard)/blog/page.tsx, src/components/admin/blog-table.tsx, src/app/api/admin/blog/route.ts, src/app/api/admin/blog/[id]/route.ts
+  - FAQ (4): src/app/admin/(dashboard)/faqs/page.tsx, src/components/admin/faqs-table.tsx, src/app/api/admin/faqs/route.ts, src/app/api/admin/faqs/[id]/route.ts
+  - Testimonials (4): src/app/admin/(dashboard)/testimonials/page.tsx, src/components/admin/testimonials-table.tsx, src/app/api/admin/testimonials/route.ts, src/app/api/admin/testimonials/[id]/route.ts
+  - Settings (3): src/app/admin/(dashboard)/settings/page.tsx, src/components/admin/settings-form.tsx, src/app/api/admin/settings/route.ts
+- Auth: HMAC-signed cookie (Web Crypto, edge-safe), bcryptjs password hashing, 24h session, env-based fallback (ADMIN_EMAIL+ADMIN_PASSWORD_HASH) for dev convenience.
+- Layout: route group `(dashboard)` so login page bypasses admin chrome; chrome layout calls requireAdmin() as defense-in-depth alongside middleware.
+- Bootstrap admin: `bun run scripts/create-admin.ts admin@pintulegal.id "password"` (already executed for the sandbox admin@pintulegal.id).
+- All admin routes verified HTTP 200 with cookie, 307 redirect without, 401 on unauthorized API calls. No passwordHash leakage. Lint clean.
+
+---
+Task ID: FINAL
+Agent: main (orchestrator)
+Task: Final verification, bug fix, README, cron job setup
+
+Work Log:
+- Verified all 14 routes return correct HTTP codes (200 public, 307 redirect for /admin without auth).
+- Verified lead API: valid submission → 200 {ok:true,id}, invalid → 422 validation errors, honeypot → silent success, rate limiting active.
+- Verified admin login flow: wrong password → 401, correct → 200 + sets HttpOnly cookie, protected routes redirect without cookie.
+- Ran agent-browser visual verification via VLM — discovered critical bug: <Reveal> component used whileInView with opacity:0 initial state, causing below-the-fold sections to be invisible in screenshots (IntersectionObserver doesn't fire during full-page capture).
+- Fixed: rewrote <Reveal> in src/components/site/section-primitives.tsx to use useInView hook + 600ms timeout fallback that forces content visible. This ensures content is ALWAYS visible — for scrolling users, screenshots, headless renders, and SEO crawlers.
+- Re-verified via VLM after fix: homepage now rated 9/10 visual quality with ALL 10 sections visible (Navbar, Hero, TrustBar, Services, Why, How, Pricing CTA, FAQ, Final CTA, Footer). No layout bugs, no empty sections, no overlapping.
+- Verified /layanan page (9/10): service cards in 3-col grid, hero with category filters, CTA band, footer all visible.
+- Verified /kontak page (8/10): contact form with all 6 fields, navy contact info card, clean layout.
+- Wrote comprehensive README.md with install/deploy/admin instructions.
+- Set up 15-minute recurring cron job (webDevReview) for continuous improvement.
+
+Stage Summary:
+- Phase 1 COMPLETE. All master-prompt requirements fulfilled:
+  ✓ Brand identity (navy/gold, door logo, Plus Jakarta Sans)
+  ✓ All pages: /, /layanan, /layanan/[slug], /tentang, /harga, /faq, /blog, /blog/[slug], /kontak, /privacy-policy, /terms, /admin, /admin/login
+  ✓ Database: services, leads, blog_posts, blog_categories, faqs, testimonials, site_settings, users (Prisma + SQLite dev, MySQL-ready)
+  ✓ Lead form with validation + honeypot + rate limiting → MySQL/SQLite
+  ✓ Admin panel with secure bcrypt + HMAC cookie auth
+  ✓ SEO: sitemap.xml, robots.txt, OG metadata, structured data (Organization, Service, FAQPage, Article, BreadcrumbList)
+  ✓ Floating WhatsApp button, BackToTop
+  ✓ Responsive mobile-first, accessibility (ARIA, keyboard, prefers-reduced-motion)
+  ✓ Framer Motion animations (subtle, premium)
+  ✓ No fake data — all placeholders clearly marked
+  ✓ README.md, .env.example
+- Files produced: ~70+ source files across app/, components/, lib/, data/, prisma/, scripts/, public/
+- Dev server: runs on port 3000, 0 lint errors, all routes verified.
+- Cron job: 15-minute recurring webDevReview for continuous QA + feature expansion.
+
+---
+Task ID: 2-A
+Agent: full-stack-developer
+Task: Cookie consent banner + dark mode toggle + custom 404 page
+
+Work Log:
+- Read worklog.md to absorb project context (PINTU LEGAL, navy #0F2747 / gold #C89B3C, Plus Jakarta Sans, .dark tokens already exist in globals.css).
+- Reviewed key files: globals.css (brand tokens + .dark overrides), layout.tsx (root layout, fonts), site-shell.tsx (wraps Navbar/Footer/FloatingWhatsApp/BackToTop), site.ts (config + waLink), button.tsx, sonner.tsx, navbar.tsx, footer.tsx, floating-whatsapp.tsx, back-to-top.tsx, section-primitives.tsx (Reveal pattern), and public/favicon.svg (door SVG concept — two arched panels + gold knobs + gold threshold).
+- FEATURE 1 (Cookie Consent): Created src/components/layout/cookie-consent.tsx — "use client", AnimatePresence-wrapped banner shown on first visit (no localStorage entry). Reads localStorage key `pintu_cookie_consent` only after mount (avoids SSR hydration mismatch). Banner = rounded-2xl card with border, bg-background, shadow-soft-lg, fixed bottom-4 left-4 right-4 sm:left-4 sm:right-auto sm:w-[420px] z-[60] (above FloatingWhatsApp z-50). Content: Lucide Cookie icon in gold-50 chip, H2 "Kami menghormati privasi Anda", body text mentioning Kebijakan Privasi, "Pelajari lebih lanjut" → /privacy-policy. Two stacked-on-mobile buttons: "Terima semua" (navy primary, gold in dark mode via bg-primary token) and "Hanya penting" (outline). Framer Motion slide-up (initial y:100 opacity:0 → y:0 opacity:1) with exit. useReducedMotion() — falls back to opacity-only fade when prefers-reduced-motion. ARIA: role=dialog, aria-label, aria-live=polite. Mounted into site-shell.tsx after <BackToTop/>.
+- FEATURE 2 (Dark Mode): Created src/components/theme-provider.tsx — "use client" wrapping next-themes ThemeProvider (attribute="class", defaultTheme="light", enableSystem=false, disableTransitionOnChange). Wrapped body children with <ThemeProvider> in src/app/layout.tsx (kept existing fonts/metadata). Created src/components/layout/theme-toggle.tsx — "use client" button toggling Sun/Moon via useTheme(); suppressHydrationWarning on button; aria-label + aria-pressed; ghost icon button style (size-9 grid, hover:bg-accent, focus-visible gold ring); renders invisible placeholder before mount to prevent layout shift.
+- Updated src/components/layout/navbar.tsx: (a) imported ThemeToggle; (b) added <ThemeToggle /> in desktop CTA area before WhatsApp button; (c) added ThemeToggle row ("Tema" label + toggle) at top of mobile sheet footer; (d) dark-mode adaptive color tweaks — scrolled bg changed from `bg-white/85` → `bg-background/85` (and `bg-white/0` → `bg-background/0`); Sheet content `bg-white` → `bg-background`; nav active/inactive text gets `dark:text-foreground` / `dark:text-muted-foreground`; ghost WhatsApp button gets `dark:text-foreground dark:hover:bg-white/5`; mobile outline button gets `dark:border-white/15 dark:text-foreground dark:hover:bg-white/5`. Navy "Konsultasi Gratis" primary button kept as bg-navy (brand identity) — still readable in dark mode as a slightly-lighter navy on the dark navy bg.
+- Updated src/components/layout/back-to-top.tsx: `bg-white text-navy hover:bg-navy-50` → `bg-background text-foreground hover:bg-muted` so the back-to-top button adapts to dark mode.
+- FEATURE 3 (404): Created src/components/site/not-found-content.tsx — "use client" with Framer Motion entrance (staggered children, fade + slide-up via variants; useReducedMotion() respects prefers-reduced-motion by collapsing to opacity-only with 0.001s duration). Visual: full-height section with bg-navy-mesh + bg-grid-navy overlay + radial gold glow. Decorative inline SVG of PINTU LEGAL double-door (two arched panels + gold knobs + gold threshold) in gold (#C89B3C). Content: "ERROR 404" eyebrow, oversized "404" in text-gradient-gold text-8xl/9xl, white H2 "Halaman tidak ditemukan", white/70 subtext per task brief, two CTAs ("Kembali ke Beranda" gold button → "/", "Hubungi Kami" white-outline → "/kontak"), and a small WhatsApp escape-hatch link with siteConfig.whatsappDisplay.
+- Created src/app/not-found.tsx — server component (NO "use client") that wraps <NotFoundContent /> inside <SiteShell> so navbar/footer appear. Sets metadata (title "Halaman Tidak Ditemukan", robots noindex).
+- Ran `bun run lint` → 0 errors, 0 warnings.
+- Smoke-tested routes via curl: GET / → 200 (renders theme toggle + cookie consent); GET /layanan, /kontak, /tentang, /harga, /faq, /blog, /privacy-policy, /admin/login → all 200; GET /nonexistent-page-test → 404 with branded page (HTML contains "Halaman tidak ditemukan", "Kembali ke Beranda", "Hubungi Kami", "ERROR 404", "text-gradient-gold", "bg-navy-mesh", "Membuka Jalan" logo alt). Verified dev.log shows no compile/runtime errors after the changes.
+
+Stage Summary:
+- Files produced (5 new):
+  - src/components/theme-provider.tsx (next-themes wrapper, ~22 lines)
+  - src/components/layout/theme-toggle.tsx (Sun/Moon toggle, ~46 lines)
+  - src/components/layout/cookie-consent.tsx (banner w/ localStorage + motion, ~135 lines)
+  - src/components/site/not-found-content.tsx (animated 404 content, ~140 lines)
+  - src/app/not-found.tsx (server 404 page wrapping SiteShell, ~25 lines)
+- Files modified (4):
+  - src/app/layout.tsx — wrapped body children with <ThemeProvider>
+  - src/components/layout/navbar.tsx — added ThemeToggle (desktop + mobile) + dark-mode color adaptations (bg-white → bg-background, text-navy → text-foreground in dark, etc.)
+  - src/components/layout/site-shell.tsx — added <CookieConsent /> after <BackToTop />
+  - src/components/layout/back-to-top.tsx — bg-white/text-navy → bg-background/text-foreground for dark mode
+- Decisions:
+  - Cookie consent: localStorage gated behind mount state to avoid SSR mismatch; both buttons persist + hide; AnimatePresence for exit; reduced-motion path uses opacity-only fade.
+  - Theme toggle: invisible placeholder before mount to prevent layout shift; aria-pressed reflects state; suppressHydrationWarning on the button (theme class is applied to <html> by next-themes after mount).
+  - Navbar: kept `bg-navy text-white` for the "Konsultasi Gratis" CTA (brand identity) — it's a slightly lighter navy on dark bg, still clearly a button. All other hardcoded `bg-white` / `text-navy` in the navbar/sheet/back-to-top swapped for adaptive tokens.
+  - 404: split into server page + client content component so framer-motion is isolated to the client piece while the route itself stays a server component (per task constraint). The door SVG is an original inline rendering matching the favicon's two-arched-panel + gold-knob + gold-threshold motif.
+  - 404 page is wrapped in <SiteShell> so the navbar/footer render; the navy-mesh panel fills the area between navbar and footer via min-h-[calc(100vh-4.5rem)].
+- Verification: `bun run lint` → 0 errors 0 warnings. All 8 spot-checked routes return expected HTTP codes (200 for valid public pages, 404 for unknown paths). Branded 404 HTML contains all required strings/classes. Homepage and other pages still render correctly after navbar/layout changes.
+
+---
+Task ID: 2-B
+Agent: full-stack-developer
+Task: Blog search + TOC + reading progress + social share
+
+Work Log:
+- Read worklog.md + key existing files (blog/page.tsx, blog/[slug]/page.tsx, blog-card.tsx, markdown.tsx, queries.ts, globals.css, site.ts) to understand brand tokens (navy #0F2747, gold #C89B3C), data shape (getPublishedPosts, getPostBySlug), and the existing inline markdown renderer's block model.
+- Added `slugify(text)` and `uniqueSlug(base, seen)` helpers to `src/lib/utils.ts` so heading IDs can be generated deterministically from text.
+- Updated `src/components/site/markdown.tsx`: parseContent now assigns an `id` to every heading block via slugify + uniqueSlug (with a per-parse `Map<string, number>` for uniqueness). `<h1>/<h2>/<h3>` render the id; `<h2>/<h3>` get `scroll-mt-28` to clear the sticky navbar. Exported new `getTableOfContents(content)` that returns `{level: 2|3, text, id}[]` for ## and ### only (h1 still participates in the uniqueness counter so IDs stay consistent across renders). Paragraphs/ul/ol/bold rendering unchanged.
+- Created `src/components/blog/blog-search.tsx` ("use client", pure presentational): search Input with Lucide `Search` icon prefix + clear button, plus shadcn Select for category filter (Semua kategori + each category). Includes sr-only labels, aria-live results count.
+- Created `src/components/blog/blog-list-client.tsx` ("use client"): state wrapper that owns rawQuery (300 ms debounced via setTimeout → useEffect cleanup) + category filter, computes filtered list with useMemo, shows featured post (newest) only when no filter is active, renders grid via existing BlogCard + FeaturedPost (moved inline), empty state "Tidak ada artikel yang cocok" with reset button. Sticky search bar at top-16/top-[72px].
+- Updated `src/app/blog/page.tsx`: serializes posts (Date → ISO string) and unique categories list, passes them to BlogListClient. Hero + CTA stay server-rendered. Server-side empty state (no posts at all) preserved.
+- Created `src/components/blog/table-of-contents.tsx` ("use client"): sticky TOC with scrollspy via IntersectionObserver (rootMargin `-96px 0px -65% 0px`). Two variants — `collapsible` (mobile: ChevronDown toggle, default closed, `aria-expanded`/`aria-controls`) and non-collapsible (desktop sidebar, always open). Active link styled with gold-50 bg + gold-700 text + left gold border. Native `<a href="#id">` anchors + global `scroll-behavior: smooth` handle scrolling.
+- Created `src/components/blog/reading-progress.tsx` ("use client"): 3 px gold gradient bar fixed at `top-0 z-[55]`. Uses Framer Motion `useScroll({ target, offset: ["start start", "end end"] })` + `useSpring({ stiffness: 120, damping: 30, mass: 0.3 })`. Locates article via `document.querySelector('[data-article-content]')` on mount, then renders a child `<ProgressBar>` that holds the ref (avoids stale-ref bugs).
+- Created `src/components/blog/share-buttons.tsx` ("use client"): WhatsApp (green-600, opens wa.me via `waLink("Halo, saya ingin membagikan artikel ini: [url]")`), Salin Tautan (navy, `navigator.clipboard.writeText` + sonner `toast.success("Tersalin!")` with `document.execCommand('copy')` fallback for older browsers/non-secure contexts), native Bagikan (only rendered when `navigator.share` available — detected post-mount to avoid hydration mismatch). Reads `window.location.href` at click time for copy + native share; uses canonical `url` prop for the WhatsApp href so SSR HTML is stable.
+- Updated `src/app/blog/[slug]/page.tsx`: added `<ReadingProgress />` at top of tree, `<ShareButtons>` below article meta (top) + at end of article body, mobile `<TableOfContents collapsible>` above article, desktop `<TableOfContents>` in sticky sidebar. Article body wrapped in `<div data-article-content>`. TOC items computed server-side via `getTableOfContents(post.content)`. Canonical share URL built from `siteConfig.url + /blog/slug`. Aside keeps TOC (desktop) + "Artikel lainnya" in one sticky container.
+- Smoke-tested all three published blog posts (200 OK), verified heading IDs match TOC anchors (including numbered headings like `## 1. Struktur & Komposisi Pendiri` → `id="1-struktur-komposisi-pendiri"`), verified WhatsApp share URL is built correctly, verified search input + category select + sticky positioning on /blog.
+- Ran `bun run lint` → 0 errors, 0 warnings.
+
+Stage Summary:
+- Files produced (5 new):
+  - src/components/blog/blog-search.tsx (112 lines)
+  - src/components/blog/blog-list-client.tsx (212 lines)
+  - src/components/blog/table-of-contents.tsx (138 lines)
+  - src/components/blog/reading-progress.tsx (53 lines)
+  - src/components/blog/share-buttons.tsx (142 lines)
+- Files modified (4):
+  - src/lib/utils.ts (added slugify + uniqueSlug helpers)
+  - src/components/site/markdown.tsx (heading IDs via slugify + uniqueSlug, scroll-mt-28, getTableOfContents export)
+  - src/app/blog/page.tsx (server data fetch → serialize → BlogListClient client island)
+  - src/app/blog/[slug]/page.tsx (ReadingProgress + TableOfContents + ShareButtons integration, data-article-content wrapper)
+- Decisions: shared slugify/uniqueSlug keeps Markdown renderer + TOC extractor in sync; ReadingProgress locates article via data attribute (no ref bridge from server page); mobile TOC collapsible + desktop TOC sticky as two instances; native share button gated post-mount to avoid hydration mismatch; copy link uses navigator.clipboard with execCommand fallback.
+- All blog routes verified HTTP 200; lint clean; no dev server errors.
+
+---
+Task ID: 2 (Cron Review Round 1)
+Agent: main (cron webDevReview)
+Task: QA assessment, bug fixes, styling polish, and new feature additions
+
+## Current Project Status Assessment
+Phase 1 was complete. This round focused on QA-driven bug fixes, premium styling polish, and adding high-value features (cookie consent, dark mode, custom 404, blog search/TOC/progress/share, animated stats, newsletter signup).
+
+## Work Completed This Round
+
+### QA Findings (via agent-browser + VLM)
+- All 14 routes returned correct HTTP codes (200 public, 404 for invalid, 307 for unauth admin).
+- Footer displayed raw placeholder text `[Nomor WhatsApp]`, `[Email]`, `[Alamat]` — looked unpolished.
+- Blog featured image was a flat solid color — needed texture.
+- Hero floating cards had basic shadows — needed more depth to "pop".
+- Service card titles lacked visual weight; card hover states needed gold accent.
+- No cookie consent, dark mode, blog search/TOC/share, custom 404, or newsletter features existed.
+
+### Bug Fixes & Styling Polish (main agent)
+- **Hero**: Enhanced floating document cards with stronger drop-shadows (`shadow-[0_20px_50px_-12px_rgba(15,39,71,0.25)]`), added ring border, improved card header (added "Legal" label), increased title font size, added subtle door-arch SVG watermark decoration behind the grid panel at 4% opacity.
+- **Services**: Added `hover:border-gold-200` accent on non-featured cards, increased hover lift to `-translate-y-1.5`, added `tracking-tight` to service titles for tighter typography.
+- **Footer**: Created `ContactValue` component (`src/components/site/contact-value.tsx`) that elegantly renders unconfigured placeholders as "Belum dikonfigurasi" with a Settings icon + dashed ring, instead of raw `[Nomor WhatsApp]` brackets. Applied to WhatsApp, Email, and Alamat in footer.
+- **Blog cards**: Added door watermark SVG overlay (10% opacity) to the gradient image placeholder for brand consistency.
+- **Tentang page**: Added animated stats section with `AnimatedCounter` component — 4 factual counters (8+ Layanan, 4 Kategori, 3 Artikel, 1 Pintu) that count up on scroll. Respects prefers-reduced-motion.
+- **Blog page**: Added `NewsletterSignup` component at the bottom — email input + submit, posts to `/api/leads` with `[NEWSLETTER]` marker, success state with green confirmation, sonner toast feedback.
+
+### New Features (subagents — Task 2-A & 2-B)
+
+**Task 2-A: Cookie consent + Dark mode + Custom 404**
+- `src/components/layout/cookie-consent.tsx` — bottom banner, localStorage persistence, Framer Motion slide-up, two buttons (Terima semua / Hanya penting), link to privacy-policy. Added to SiteShell.
+- `src/components/theme-provider.tsx` + `src/components/layout/theme-toggle.tsx` — next-themes integration, Sun/Moon toggle button in navbar (desktop + mobile). Navbar/back-to-top adapted for dark mode (bg-background instead of bg-white).
+- `src/app/not-found.tsx` + `src/components/site/not-found-content.tsx` — branded 404 page with bg-navy-mesh, gold "404" text, inline door SVG, two CTAs (Kembali ke Beranda / Hubungi Kami).
+
+**Task 2-B: Blog search + TOC + reading progress + share**
+- `src/components/blog/blog-search.tsx` + `src/components/blog/blog-list-client.tsx` — debounced search (300ms), category filter dropdown, empty state. Blog listing is now an interactive client island.
+- `src/components/blog/table-of-contents.tsx` — sticky TOC sidebar with scrollspy (IntersectionObserver), gold active state, collapsible on mobile. `src/components/site/markdown.tsx` updated to generate slug IDs on h2/h3.
+- `src/components/blog/reading-progress.tsx` — 3px gold progress bar at top, Framer Motion useScroll + useSpring.
+- `src/components/blog/share-buttons.tsx` — WhatsApp share, Copy Link (with sonner toast), native Web Share API.
+
+## Verification Results
+- `bun run lint` → 0 errors, 0 warnings
+- All routes: 200 (public), 404 (custom branded page), 307 (admin redirect)
+- VLM verification:
+  - Homepage: 8/10 (floating cards pop, clean hierarchy)
+  - Tentang: animated stats section visible with 4 counters
+  - Blog: search bar + category filter + newsletter signup all present (8/10)
+  - Blog detail: TOC sidebar + share buttons present
+  - Custom 404: 9/10 (branded, door icon, CTAs)
+  - Cookie consent: banner visible with correct text and buttons
+- Footer: confirmed "Belum dikonfigurasi" elegant placeholder rendering
+- Dark mode toggle: present in navbar
+
+## Unresolved Issues / Risks
+- Dark mode toggle couldn't be clicked via agent-browser (selector mismatch), but the feature is implemented and present in DOM. Needs manual verification in preview panel.
+- Reading progress bar only visible when scrolling (0% width at top) — this is correct behavior but not visible in static screenshots.
+- Dev server process dies between bash tool calls (sandbox limitation). Server must be running for preview.
+
+## Priority Recommendations for Next Round
+1. **Service comparison feature** — let users compare 2-3 services side by side on /layanan
+2. **Testimonials carousel** — if testimonials are added via admin, display them on homepage with a carousel
+3. **Blog related posts** — show "Artikel terkait" at the bottom of blog detail based on category
+4. **Admin dashboard charts** — add a simple leads-over-time chart on admin dashboard
+5. **Pricing packages structure** — structured tier cards (Basic/Professional/Enterprise) with CTA (still no fake prices)
+6. **Service FAQ inheritance** — show relevant global FAQs on service detail pages
+7. **Sitemap submission** — add Google Search Console verification meta tag support
+8. **Performance optimization** — add lazy loading to blog images, optimize font loading
+
+## Files Modified/Created This Round
+**New files (12):**
+- src/components/site/contact-value.tsx (footer placeholder helper)
+- src/components/site/animated-counter.tsx (AnimatedCounter + StatsSection)
+- src/components/site/newsletter-signup.tsx (newsletter form)
+- src/components/theme-provider.tsx
+- src/components/layout/theme-toggle.tsx
+- src/components/layout/cookie-consent.tsx
+- src/components/site/not-found-content.tsx
+- src/app/not-found.tsx
+- src/components/blog/blog-search.tsx
+- src/components/blog/blog-list-client.tsx
+- src/components/blog/table-of-contents.tsx
+- src/components/blog/reading-progress.tsx
+- src/components/blog/share-buttons.tsx
+
+**Modified files (8):**
+- src/components/sections/hero.tsx (shadows, door arch decoration)
+- src/components/sections/services.tsx (hover states, typography)
+- src/components/layout/footer.tsx (ContactValue integration)
+- src/components/site/blog-card.tsx (door watermark)
+- src/app/tentang/page.tsx (animated stats section)
+- src/app/blog/page.tsx (newsletter signup + blog search integration)
+- src/app/blog/[slug]/page.tsx (TOC + reading progress + share)
+- src/app/layout.tsx (ThemeProvider wrapper)
+- src/components/layout/navbar.tsx (theme toggle + dark mode bg)
+- src/components/layout/site-shell.tsx (cookie consent)
+- src/components/layout/back-to-top.tsx (dark mode bg)
+- src/components/site/markdown.tsx (heading IDs + getTableOfContents)
+- src/lib/utils.ts (slugify + uniqueSlug helpers)
+
+---
+Task ID: 3-A
+Agent: full-stack-developer
+Task: Service comparison tool + related services on detail + blog related posts
+
+Work Log:
+- Read worklog.md (project context: PINTU LEGAL, navy #0F2747 / gold #C89B3C, Plus Jakarta Sans, dark mode, cookie consent, blog search/TOC/share already shipped in 2-A/2-B).
+- Read key files: src/app/layanan/page.tsx, src/app/layanan/[slug]/page.tsx, src/app/blog/[slug]/page.tsx, src/components/site/service-card.tsx, src/components/site/service-sidebar.tsx, src/components/site/blog-card.tsx, src/data/queries.ts, src/components/site/section-primitives.tsx, src/app/globals.css, prisma/schema.prisma, src/components/ui/{dialog,table,checkbox,button}.tsx. Confirmed Service model carries slug/name/shortDescription/description/icon/highlights(JSON)/processSteps(JSON)/requirements(JSON)/durationLabel/priceLabel/categoryId/isFeatured/sortOrder/isActive.
+- FEATURE 1 — Service Comparison Tool:
+  - Added `ComparableService` type + `getServicesForComparison()` to src/data/queries.ts: fetches all active services with category + parsed highlights/requirements, returns plain serializable shape.
+  - Created src/components/layanan/service-comparison.tsx ("use client"): outline "Bandingkan Layanan" trigger button with GitCompare icon (gold accent). Opens a Dialog (navy header, gold icon chip) with: (a) a scrollable 2-col selection grid using shadcn Checkbox + label cards (gold ring when selected, dimmed+disabled when max 3 reached); (b) a selection summary "{n} / 3 layanan dipilih" + "Hapus pilihan" reset; (c) an AnimatePresence-swapped empty state ("Pilih minimal 2 layanan untuk membandingkan" / "Pilih satu layanan lagi…") when <2 selected, or the comparison table when ≥2 selected.
+  - Comparison table: native `<table>` inside an `overflow-x-auto` wrapper so it scrolls horizontally on mobile. Navy header row with gold-accented service name cells (Sparkles icon chip). Zebra striping via `[&_tr:nth-child(odd)]:bg-white [&_tr:nth-child(even)]:bg-surface-alt`. Rows: Deskripsi Singkat, Estimasi Durasi (gold pill or "Bervariasi"), Kategori (link chip to /layanan?cat=slug or "—"), Apa yang Termasuk (first 3 highlights with CheckCircle2 gold icons, "+N lainnya" overflow), Dokumen Diperlukan (first 3 requirements with navy bullets, "+N lainnya" overflow), and a final CTA row with full-width navy "Lihat Detail" button → /layanan/[slug].
+  - Selection state is local; reset to [] 200ms after dialog closes (defers so the exit animation isn't interrupted). MIN_SELECTION=2, MAX_SELECTION=3, HIGHLIGHT_PREVIEW=3, REQUIREMENT_PREVIEW=3 as named constants.
+  - Updated src/app/layanan/page.tsx: Promise.all now also calls getServicesForComparison(); restructured the chip row into a flex-col→sm:flex-row container that puts the category chips on the left and the <ServiceComparison> trigger on the right. Trigger only rendered when comparableServices.length >= 2 (graceful no-op for tiny catalogs).
+- FEATURE 2 — Related Services on Service Detail:
+  - Added `getRelatedServices(slug, limit=3)` to src/data/queries.ts: looks up source service's categoryId, fetches up to `limit` OTHER active services in the same category (ordered by sortOrder/name), then fills with other active services (excluding already-selected, ordered by isFeatured desc → sortOrder → name) if short. Returns ServiceCard[] shape so the existing ServiceCard component renders them unchanged.
+  - Updated src/app/layanan/[slug]/page.tsx: imports ServiceCard + SectionHeading + getRelatedServices; calls getRelatedServices(slug, 3); renders a new <section> with bg-surface-alt + border-t between the body section and the final ServiceCtaBand. Uses <SectionHeading eyebrow="LAYANAN TERKAIT" title="Layanan Lain yang Mungkin Anda Butuhkan" description="Pelajari layanan terkait untuk melengkapi kebutuhan legalitas bisnis Anda." /> and a 3-col grid (sm:2 / lg:3) of ServiceCards wrapped in <Reveal delay={i*0.08}> for stagger. Section is conditionally rendered only when relatedServices.length > 0.
+- FEATURE 3 — Blog Related Posts:
+  - Added `getRelatedPosts(slug, limit=3)` to src/data/queries.ts: same strategy as getRelatedServices but for BlogPost — same category first (PUBLISHED + publishedAt<=now), then fill with other published posts. Includes category relation so BlogCard can render the category chip. Returns raw Prisma objects (BlogCard is a server component so Date objects are fine).
+  - Updated src/app/blog/[slug]/page.tsx: imports SectionHeading + getRelatedPosts; calls getRelatedPosts(slug, 3) alongside the existing getPublishedPosts(4) for the sidebar. Added a new full-width <section> AFTER the article body section (before </SiteShell>) with bg-surface-alt + border-t. Uses <SectionHeading eyebrow="ARTIKEL TERKAIT" title="Baca Juga" description="Artikel lain dengan topik serupa yang mungkin relevan untuk Anda." /> and a 3-col grid of BlogCards wrapped in <Reveal>. The existing sidebar "Artikel lainnya" (latest posts) is left untouched per spec — it shows latest, the new section shows related-by-category.
+- Smoke-tested all affected routes via curl after restart:
+  - GET /layanan → 200, "Bandingkan Layanan" trigger present (1 match), category chips still render, comparison trigger only appears once.
+  - GET /layanan?cat=pendirian-badan-usaha → 200, "Bandingkan Layanan" present + "Menampilkan N layanan dalam kategori" still works (filter intact).
+  - GET /layanan/pendirian-pt → 200, "LAYANAN TERKAIT" + "Layanan Lain yang Mungkin Anda Butuhkan" present; related section contains 3 service links (pendirian-cv, pendirian-yayasan, perubahan-data-perusahaan — same-category first, then filler).
+  - GET /layanan/pendirian-cv → 200, related section shows pendirian-pt, pendirian-yayasan, perubahan-data-perusahaan (verifies same-category-first logic on a different source).
+  - GET /blog/pendirian-pt-vs-cv → 200, "ARTIKEL TERKAIT" + "Baca Juga" present; related section shows 2 posts (5-persiapan-sebelum-mendirikan-pt, apa-itu-nib) — correct because only 3 published posts exist total. Sidebar "Artikel lainnya" still present (1 match) — sidebar unchanged.
+- Ran `bun run lint` → 0 errors, 0 warnings (exit code 0).
+
+Stage Summary:
+- Files produced (1 new):
+  - src/components/layanan/service-comparison.tsx (~370 lines, "use client") — trigger button + Dialog with multi-select + AnimatePresence table/empty-state swap, responsive horizontal-scroll table, navy/gold/zebra styling.
+- Files modified (4):
+  - src/data/queries.ts — added ComparableService type, getServicesForComparison(), getRelatedServices(slug, limit), getRelatedPosts(slug, limit). (~155 new lines.)
+  - src/app/layanan/page.tsx — added getServicesForComparison fetch (parallel Promise.all), restructured chip row into flex container that holds both the category chips and the <ServiceComparison> trigger.
+  - src/app/layanan/[slug]/page.tsx — imported SectionHeading + ServiceCard + getRelatedServices; calls getRelatedServices(slug, 3); renders new "Layanan Terkait" section between body and final CTA band (conditionally rendered).
+  - src/app/blog/[slug]/page.tsx — imported SectionHeading + getRelatedPosts; calls getRelatedPosts(slug, 3); renders new full-width "Artikel Terkait / Baca Juga" section after the article body section. Sidebar "Artikel lainnya" preserved.
+- Decisions:
+  - Comparison component is its own client island; the table data is fetched server-side and passed as serializable props (ComparableService). All Dates are absent from this shape (only strings/arrays), so no ISO-string serialization needed.
+  - Dialog content uses Radix's default portal+mount-on-open behavior — initial HTML doesn't include the table markup (correct for SEO: the comparison is a user-initiated tool, not primary content). The trigger button is in the initial HTML for discoverability.
+  - getRelatedServices returns ServiceCard[] (the lightweight shape used everywhere else) so the existing ServiceCard component works without modification.
+  - getRelatedPosts returns raw Prisma objects with category included (matching the existing getPublishedPosts return type). BlogCard is a server component, so passing Date objects directly is fine — no serialization dance needed (unlike the blog listing client island).
+  - "Layanan Terkait" and "Artikel Terkait" sections are conditionally rendered (length > 0) so pages don't show empty sections if the catalog is tiny.
+  - Same-category-first fill strategy uses `excludeIds` Set to prevent duplicates between same-category results and fillers. For services, fillers are ordered isFeatured desc → sortOrder → name so featured services surface first. For posts, fillers are ordered by publishedAt desc (newest first).
+  - Comparison table uses a native `<table>` (not shadcn Table) for full control over zebra striping + navy header + responsive horizontal scroll wrapper. shadcn Checkbox + Dialog + Button are still used per the constraint.
+- Verification: `bun run lint` → 0 errors 0 warnings. All 5 spot-checked routes return HTTP 200 (layanan, layanan?cat=, layanan/pendirian-pt, layanan/pendirian-cv, blog/pendirian-pt-vs-cv). Required strings ("Bandingkan Layanan", "Layanan Lain yang Mungkin Anda Butuhkan", "LAYANAN TERKAIT", "Baca Juga", "ARTIKEL TERKAIT", "Artikel lainnya") all present in their respective HTML. Related-service links verified same-category-first on two different source slugs. Dev server compiles all routes cleanly with no warnings beyond the known middleware-deprecation hint.
+
+---
+Task ID: 3 (Cron Review Round 2)
+Agent: main (cron webDevReview)
+Task: QA assessment, bug fixes, new features (comparison, related content, testimonials, charts, pricing tiers)
+
+## Current Project Status Assessment
+Phase 1 complete + Round 1 added cookie consent, dark mode, 404, blog search/TOC/share, newsletter, animated stats. This round focused on: fixing QA-found bugs (cookie consent overlap, kontak placeholders, admin button cutoff) and adding high-value features from the priority list (service comparison, related content, testimonials section, admin dashboard charts, pricing tier cards).
+
+## Work Completed This Round
+
+### QA Findings (via agent-browser + VLM)
+- Cookie consent banner overlapped/blocked content headlines on multiple pages (layanan, service detail, harga, kontak) — positioning too tall and full-width on mobile.
+- Kontak page still showed raw `[Nomor WhatsApp]`, `[Email]`, `[Alamat]` placeholders (ContactValue helper was only applied to footer, not kontak page).
+- Admin "Keluar" (logout) button text was cut off at bottom of sidebar.
+- No testimonials section on homepage.
+- No service comparison feature.
+- No related services on service detail pages.
+- No related posts on blog detail pages.
+- No charts on admin dashboard.
+- No structured pricing tiers on /harga.
+
+### Bug Fixes (main agent)
+- **Cookie consent repositioned** (`src/components/layout/cookie-consent.tsx`): Changed from `fixed bottom-4 left-4 right-4 sm:w-[420px]` (which overlapped content) to `fixed inset-x-3 bottom-3 mx-auto max-w-2xl` — now a centered, slimmer bar that doesn't block content. Redesigned layout to horizontal on desktop (icon + text + buttons in a row), vertical on mobile. Added `backdrop-blur-xl` and `bg-background/95` for premium glassmorphism. Added `safe-area-inset-bottom` padding for iOS.
+- **Kontak page placeholders** (`src/app/kontak/page.tsx`): Applied `ContactValue` component to WhatsApp, Email, and Alamat fields — now shows elegant "Belum dikonfigurasi" pills with Settings icon + dashed ring instead of raw `[Nomor WhatsApp]` brackets.
+- **Admin Keluar button** (`src/components/admin/admin-shell.tsx`): Fixed text cutoff by adding `shrink-0 whitespace-nowrap gap-2.5` to button, wrapping text in `<span className="truncate">`, increasing height from h-9 to h-10, and adding `shrink-0` to icons.
+
+### New Features
+
+**1. Testimonials section on homepage** (`src/components/sections/testimonials.tsx` + `src/app/page.tsx`)
+- Async server component that fetches active testimonials via `getTestimonials(6)`.
